@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ffffff" />
+
+  <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://static.mkemalw.workers.dev/" />
+
+  <title>QQQUANTA – Register</title>
+
+  <style>
+    #app.container {
+      max-width: 720px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 1rem;
+    }
+
+    body {
+      background: #f3f4f6;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .auth-card {
+      border-radius: 1rem;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: #ffffff;
+    }
+
+    .auth-header {
+      padding: 1.25rem 1.5rem;
+    }
+
+    .auth-body {
+      padding: 1.5rem;
+    }
+
+    .auth-footer {
+      border-top: 1px solid rgba(148, 163, 184, 0.3);
+      font-size: 0.9rem;
+      background: #f9fafb;
+      border-radius: 0 0 1rem 1rem;
+    }
+
+    .btn-primary {
+      border-radius: 999px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app" class="container">
+    <div class="auth-card">
+      <div class="auth-header d-flex align-items-center justify-content-between">
+        <div>
+          <h1 class="h5 mb-0">Register</h1>
+          <p class="mb-0 text-muted small">
+            Masukkan nomor WhatsApp untuk membuat akun. Kode verifikasi akan dikirim via WhatsApp (mock).
+          </p>
+        </div>
+      </div>
+
+      <div class="auth-body">
+        <div id="alert-area"></div>
+
+        <form id="register-form" novalidate>
+          <div class="mb-3">
+            <label for="phone" class="form-label">Nomor HP (WhatsApp)</label>
+            <input type="tel" id="phone" class="form-control" placeholder="08xxxxxxxxxx" required />
+            <div class="form-text text-muted">
+              Nomor ini dipakai untuk login dan verifikasi via WhatsApp (saat ini masih simulasi).
+            </div>
+          </div>
+
+          <button type="submit" id="register-btn" class="btn btn-primary w-100 mt-2 mb-2">
+            <span class="btn-text">Minta Kode via WhatsApp (Mock)</span>
+            <span class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Box “lanjutkan verifikasi” masih boleh disimpan,
+           tapi sekarang tidak akan pernah muncul karena kita selalu clear pending -->
+      <div id="resume-box" class="mt-2 d-none">
+        <small class="text-muted">
+          Terlihat ada pendaftaran yang belum selesai di perangkat ini.
+          <button type="button" id="resume-btn" class="btn btn-link p-0 align-baseline">
+            Lanjutkan verifikasi?
+          </button>
+        </small>
+      </div>
+
+      <div class="auth-footer p-4 d-flex align-items-center justify-content-between">
+        <span class="small">
+          Sudah punya akun?
+          <a href="login.html" class="ms-1 link-primary">Login di sini</a>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      // ===============================
+      // 1. DISABLE /me GUARD (sementara)
+      // ===============================
+      async function checkLoggedIn(AUTH_BASE) {
+        // Guard dimatikan sementara biar tidak auto redirect
+        // console.log("[register] /me guard dimatikan");
+        return;
+      }
+
+      window.addEventListener("DOMContentLoaded", () => {
+        console.log("[register] init");
+
+      // ===============================
+      // 2. ENV DETECT
+      //===============================
+        const isLocal =
+          location.hostname === "localhost" || location.hostname === "127.0.0.1";
+        const AUTH_BASE = isLocal
+          ? "http://127.0.0.1:8786"
+          : "https://auth-uid.mkemalw.workers.dev";
+
+        // ===============================
+        // 3. CLEAR STATE REGISTER (fresh always)
+        // ===============================
+        try {
+          Object.keys(localStorage).forEach((k) => {
+            if (
+              k === "qqquanta_pending_register" ||
+              k === "qqquanta_pending_phone" ||
+              k === "bpjs_pending_otp"
+            ) {
+              localStorage.removeItem(k);
+            }
+          });
+          console.log("[register] cleared pending auth localStorage");
+        } catch (e) {
+          console.warn("[register] failed clearing localStorage", e);
+        }
+
+        // ===============================
+        // 4. (DISABLED) OPTIONAL GUARD LOGIN
+        // ===============================
+        // checkLoggedIn(AUTH_BASE);
+
+        // ===============================
+        // 5. DOM REFS
+        // ===============================
+        const PENDING_KEY = "qqquanta_pending_register";
+
+        const alertArea = document.getElementById("alert-area");
+        const form = document.getElementById("register-form");
+        const btn = document.getElementById("register-btn");
+        const phoneInput = document.getElementById("phone");
+        const resumeBox = document.getElementById("resume-box");
+        const resumeBtn = document.getElementById("resume-btn");
+
+        const btnText = btn.querySelector(".btn-text");
+        const btnSpinner = btn.querySelector(".spinner-border");
+
+        function showAlert(msg, type = "danger") {
+          alertArea.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+          ${msg}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>`;
+        }
+
+        function clearAlert() {
+          alertArea.innerHTML = "";
+        }
+
+        function setLoading(loading) {
+          if (loading) {
+            btn.disabled = true;
+            btnSpinner.classList.remove("d-none");
+            btnText.textContent = "Memproses...";
+          } else {
+            btn.disabled = false;
+            btnSpinner.classList.add("d-none");
+            btnText.textContent = "Minta Kode via WhatsApp (Mock)";
+          }
+        }
+
+        function savePendingRegister(obj) {
+          try {
+            localStorage.setItem(PENDING_KEY, JSON.stringify(obj));
+            console.log("[register] saved pending:", obj);
+          } catch (e) {
+            console.warn("[register] failed saving pending", e);
+          }
+        }
+
+        if (resumeBox && resumeBtn) {
+          resumeBtn.addEventListener("click", () => {
+            window.location.href = "otp.html";
+          });
+        }
+
+        // ===============================
+        // 6. API CALL → /register-temp
+        // ===============================
+        async function requestTempPassword(phone) {
+          const resp = await fetch(AUTH_BASE + "/register-temp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone: phone.trim() }),
+          });
+
+          const data = await resp.json().catch(() => ({}));
+          console.log("[register] /register-temp", resp.status, data);
+
+          if (!resp.ok || !data.ok) {
+            if (data.reason === "user_exists") {
+              throw new Error("Nomor ini sudah terdaftar. Silakan login.");
+            }
+            if (data.reason === "missing_fields") {
+              throw new Error("Nomor HP belum diisi dengan benar.");
+            }
+            throw new Error(data.error || resp.statusText || "Gagal meminta kode.");
+          }
+          return data;
+        }
+
+        // ===============================
+        // 7. HANDLE SUBMIT REGISTER
+        // ===============================
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          clearAlert();
+
+          const phone = phoneInput.value.trim();
+          if (!phone) {
+            showAlert("Nomor HP wajib diisi.", "warning");
+            return;
+          }
+
+          setLoading(true);
+          try {
+            const data = await requestTempPassword(phone);
+
+            // simpan state → otp.html
+            savePendingRegister({
+              phone,
+              user_id: data.user_id || null,
+              mock_temp_password: data.mock_temp_password || null,
+              expires_at: Date.now() + (data.expires_in_sec || 300) * 1000,
+            });
+
+            // redirect ke OTP
+            window.location.href = "otp.html";
+          } catch (err) {
+            console.error(err);
+            showAlert(err.message || "Terjadi kesalahan saat meminta kode.");
+          } finally {
+            setLoading(false);
+          }
+        });
+      });
+    })();
+  </script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

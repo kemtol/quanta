@@ -1,0 +1,239 @@
+{
+  "asset_type": "GOLD",
+  "knowledge_file_reference": "KNOWLEDGE_FILE_GOLD_V1",
+  "macro_dashboard": {
+    "common_evidence": [
+      {
+        "item": "DXY",
+        "state": "rising",
+        "note": "Indeks Dolar AS menguat ke kisaran 100,3 dan secara teknikal masih dalam tren naik pada chart 4H."
+      },
+      {
+        "item": "The_Fed_Rate_Path",
+        "state": "hawkish",
+        "note": "Peluang rate cut Desember turun karena data tenaga kerja kuat, menekan emas jangka pendek."
+      },
+      {
+        "item": "Global_Growth",
+        "state": "stagflation_risk",
+        "note": "Tarif agresif dan kebijakan fiskal ekspansif meningkatkan risiko stagflasi AS."
+      },
+      {
+        "item": "Event_Risk",
+        "state": "elevated",
+        "note": "Shutdown 43 hari, ketidakpastian data, serta risiko geopolitik global."
+      }
+    ],
+    "gold_specific": [
+      {
+        "item": "Real_Yield_US10Y_vs_TIP",
+        "state": "unknown",
+        "note": "Hanya yield nominal terlihat; real yield belum jatuh signifikan."
+      },
+      {
+        "item": "Central_Bank_Demand",
+        "state": "strong",
+        "note": "Bank sentral (Rusia, China) terus mengakumulasi emas secara agresif."
+      },
+      {
+        "item": "De_dollarization",
+        "state": "rising",
+        "note": "BRICS dan negara berkembang mempercepat dedolarisasi dan peningkatan cadangan emas."
+      }
+    ],
+    "nasdaq_specific": [
+      {
+        "item": "US10Y",
+        "state": "sideways_up",
+        "note": "US10Y bergerak sideways di sekitar 4.1%."
+      },
+      {
+        "item": "AI_Bubble_Sentiment",
+        "state": "fatigue",
+        "note": "Nvidia 'sell-the-news' menunjukkan kelelahan sektor AI."
+      },
+      {
+        "item": "Credit_HYG_LQD",
+        "state": "not_shown",
+        "note": "Tidak ada data kredit pada screenshot."
+      }
+    ],
+    "macro_regime": "multi_regime_war_premium",
+    "macro_to_asset_bias": "bearish_jangka_pendek_bullish_struktural",
+    "confidence_pct": 70
+  },
+  "market_bias": {
+    "4H": {
+      "summary": "Emas berkonsolidasi dalam bullish pennant dengan harga di 4.070–4.080, jauh dari resistance 4.125–4.240 namun di atas support 4.030 dan 4.000.",
+      "trend": "bullish_konsolidatif",
+      "structure": "bullish_pennant_range",
+      "momentum": "flat_to_down",
+      "volatility": "contracting",
+      "key_levels": [4240, 4125, 4077, 4030, 4000],
+      "liquidity": {
+        "internal": [
+          "Value area 4.050–4.100.",
+          "Swing high minor 4.115–4.125."
+        ],
+        "external": [
+          "Resistance 4.230–4.240.",
+          "Support 4.000–3.940."
+        ]
+      },
+      "imbalances_fvg": [
+        "Rebalancing potensial di 4.000–4.030."
+      ],
+      "trigger": "Break 4.030 membuka jalan menuju 4.000, reclaim 4.125 membuka jalan menuju 4.240.",
+      "confidence_pct": 72
+    },
+    "1H": {
+      "summary": "1H menunjukkan lower high, harga di bawah VWAP, dan koreksi menuju 4.050–4.040.",
+      "trend": "bearish_intraday",
+      "structure": "LH_LL_dalam_range_besar",
+      "momentum": "down",
+      "volatility": "stable",
+      "key_levels": [4160, 4125, 4100, 4075, 4050, 4030],
+      "liquidity": {
+        "internal": [
+          "Likuiditas 4.070–4.090.",
+          "Cluster low 4.040–4.050."
+        ],
+        "external": [
+          "Buy stops 4.125–4.160.",
+          "Sell stops di bawah 4.000."
+        ]
+      },
+      "imbalances_fvg": [
+        "Zona re-test 4.085–4.100."
+      ],
+      "trigger": "Candle 1H close < 4.050 + retest gagal menargetkan 4.030–4.000.",
+      "confidence_pct": 74
+    },
+    "15M": {
+      "summary": "15M bearish, harga di bawah VWAP dan menekan support 4.050–4.030.",
+      "trend": "bearish_scalping",
+      "structure": "LH_LL",
+      "momentum": "down",
+      "volatility": "expanding",
+      "key_levels": [4090, 4080, 4070, 4050, 4035, 4030, 4000],
+      "liquidity": {
+        "internal": [
+          "Zona 4.070–4.080 untuk entry short.",
+          "Cluster low 4.050–4.055."
+        ],
+        "external": [
+          "High liquidity 4.090–4.100.",
+          "Sell stops besar di bawah 4.000."
+        ]
+      },
+      "imbalances_fvg": [
+        "FVG 4.085–4.060.",
+        "Micro-gap 4.050–4.040."
+      ],
+      "trigger": "Rejection 15M di 4.070–4.080 + harga di bawah VWAP.",
+      "confidence_pct": 76
+    }
+  },
+  "liquidity_map": {
+    "internal_liquidity": [
+      "4.050–4.100 value area.",
+      "Equal lows 4.040–4.050."
+    ],
+    "external_liquidity": [
+      "4.125–4.160 buy stops.",
+      "4.000–3.940 sell stops."
+    ],
+    "sweep_expectation": "sell_side_lebih_dulu",
+    "imbalance_fvg_zones": [
+      "4.085–4.060 FVG.",
+      "4.000–4.030 rebalancing."
+    ]
+  },
+  "trade_direction": {
+    "choice": "SHORT_SETUP_TAKTIS_MENUJU_ZONA_AKUMULASI",
+    "rationale": "Headwind makro jangka pendek (DXY kuat + Fed hawkish), sementara support struktural emas tetap solid di 4.000."
+  },
+  "trade_plan": {
+    "context_confluence": [
+      "Makro hawkish jangka pendek.",
+      "War premium & central bank buying menopang bullish jangka panjang.",
+      "4H bullish pennant namun sedang pullback.",
+      "1H–15M bearish → peluang short taktis."
+    ],
+    "entry": {
+      "type": "limit",
+      "zone": [4070, 4085],
+      "trigger": "Rejection 15M di zona 4.070–4.085 + tetap di bawah VWAP."
+    },
+    "invalidation": {
+      "hard_stop": 4110,
+      "condition": "Close 1H > 4.105–4.110 menandakan reclaim range atas."
+    },
+    "targets": [
+      {
+        "T1": 4030,
+        "action": "Take profit 50–60% dan geser stop ke breakeven."
+      },
+      {
+        "T2": 4000,
+        "action": "Tutup sisa posisi di area 4.000."
+      }
+    ],
+    "risk": {
+      "stop_loss_level": 4110,
+      "stop_loss_rationale": "Break di atas 4.110 memicu squeeze menuju 4.125–4.160.",
+      "risk_reward_ratio": {
+        "T1_RRR": 1.29,
+        "T2_RRR": 2.14
+      },
+      "max_account_risk_pct": 1.0,
+      "notes": "Tidak lebih dari 1% risiko karena volatilitas headline tinggi."
+    },
+    "no_trade_conditions": [
+      "Harga jatuh langsung ke 4.030–4.000 tanpa pullback.",
+      "Harga reclaim kuat > 4.110.",
+      "Menjelang rilis CPI/NFP/FOMC atau headline perang besar."
+    ]
+  },
+  "citadel_multi_asset_scoring_engine": {
+    "asset_detection": {
+      "rules": [
+        "Fokus emas + yield + DXY → GOLD.",
+        "Jika dominan breadth/NASDAQ → NASDAQ.",
+        "Jika ambigu → unknown."
+      ]
+    },
+    "regime_detection": {
+      "risk_off_conditions": [
+        "VIX naik tajam.",
+        "HYG/LQD melemah signifikan."
+      ],
+      "rate_shock_conditions": [
+        "US10Y bergerak impulsif."
+      ],
+      "gold_bull_conditions": [
+        "Real yield turun.",
+        "DXY melemah."
+      ],
+      "tech_risk_conditions": [
+        "Yield tinggi + tekanan sektor AI/NASDAQ."
+      ]
+    },
+    "dynamic_weights": {
+      "gold_regime": {"macro": 0.55, "technical": 0.25, "liquidity": 0.15, "event": 0.05},
+      "nasdaq_regime": {"macro": 0.45, "technical": 0.35, "liquidity": 0.15, "event": 0.05},
+      "risk_off_regime": {"macro": 0.6, "technical": 0.2, "liquidity": 0.15, "event": 0.05},
+      "range_regime": {"macro": 0.35, "technical": 0.35, "liquidity": 0.25, "event": 0.05}
+    },
+    "output": {
+      "detected_asset": "GOLD",
+      "regime": "range_regime_dengan_premi_geopolitik",
+      "weights_used": {"macro": 0.35, "technical": 0.35, "liquidity": 0.25, "event": 0.05},
+      "macro_score": 68,
+      "technical_score": 65,
+      "liquidity_score": 60,
+      "event_score": 40,
+      "final_confidence_pct": 64
+    }
+  }
+}

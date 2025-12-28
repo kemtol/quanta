@@ -1,0 +1,8 @@
+name = "qqquanta"
+main = "src/index.js"
+compatibility_date = "2024-11-29"
+
+# Static assets: folder futures di root repo
+[assets]
+directory = "../../dist"
+binding   = "ASSETS"

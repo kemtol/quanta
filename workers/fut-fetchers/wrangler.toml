@@ -1,0 +1,25 @@
+name = "fut-fetchers"
+main = "src/index.js"
+compatibility_date = "2025-12-16"
+
+# NOTE: Cron trigger REMOVED - now managed by cron-checker
+# Old config (DO NOT ADD):
+# [triggers]
+# crons = ["0 * * * *"]
+
+# R2 bucket (nama bucket kamu di Cloudflare)
+[[r2_buckets]]
+binding = "TAPE_DATA_FUTURES"
+bucket_name = "tape-data-futures"
+
+[vars]
+# proxy Nasdaq untuk DP_PROXY (FINRA RegSHO itu equity/ETF)
+DP_PROXY_SYMBOL = "QQQ"
+
+# etika rate limit finra (ms)
+FINRA_SLEEP_MS = "50"
+
+# FRED API key (gratis dari https://fredaccount.stlouisfed.org/apikeys)
+
+
+# KV namespace for cron state (shared with cron-checker)

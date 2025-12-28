@@ -1,0 +1,14 @@
+{
+    "name": "fut-taping-agregator",
+    "main": "src/index.js",
+    "compatibility_date": "2024-03-29",
+    "observability": {
+        "enabled": true
+    },
+    "r2_buckets": [
+        {
+            "binding": "DATA_LAKE",
+            "bucket_name": "tape-data-futures"
+        }
+    ]
+}

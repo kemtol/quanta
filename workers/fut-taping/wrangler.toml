@@ -1,0 +1,11 @@
+name = "fut-taping"
+main = "src/index.js"
+compatibility_date = "2024-12-17"
+compatibility_flags = ["nodejs_compat"]
+
+# Browser Rendering Binding
+browser = { binding = "MYBROWSER" }
+
+[[services]]
+binding = "STATE_ENGINE"
+service = "fut-state-engine"

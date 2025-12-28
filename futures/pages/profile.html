@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ffffff" />
+
+  <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://static.mkemalw.workers.dev/" />
+
+  <title>QQQUANTA – Lengkapi Profil</title>
+
+  <style>
+    #app.container {
+      max-width: 720px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 1rem;
+    }
+
+    body {
+      background: #f3f4f6;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .auth-card {
+      border-radius: 1rem;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: #ffffff;
+    }
+
+    .auth-card input::placeholder {
+      color: #ddd;
+    }
+
+    @media (max-width: 576px) {
+      body {
+        align-items: flex-start;
+      }
+
+      .auth-card {
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+      }
+    }
+
+    .auth-header {
+      padding: 1.25rem 1.5rem;
+    }
+
+    .auth-body {
+      padding: 1.5rem;
+    }
+
+    .auth-footer {
+      border-top: 1px solid rgba(148, 163, 184, 0.3);
+      font-size: 0.9rem;
+      background: #f9fafb;
+      border-radius: 0 0 1rem 1rem;
+    }
+
+    .form-label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #4b5563;
+    }
+
+    .btn-primary {
+      border-radius: 999px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app" class="container">
+    <div class="auth-card">
+      <div class="auth-header d-flex align-items-center justify-content-between">
+        <div>
+          <h1 class="h5 mb-0">Lengkapi Profil</h1>
+          <p class="mb-0 text-muted small">
+            Set nama dan password permanen untuk mengaktifkan akun QQQUANTA kamu.
+          </p>
+        </div>
+      </div>
+
+      <div class="auth-body">
+        <div id="alert-area"></div>
+
+        <div id="loading-box" class="text-center py-3">
+          <div class="spinner-border text-primary spinner-border-sm mb-2" role="status"></div>
+          <p class="mb-0 small text-muted">
+            Memeriksa sesi login...
+          </p>
+        </div>
+
+        <div id="profile-box" class="d-none">
+          <div class="mb-3">
+            <div class="small text-muted mb-1">Akun terhubung ke nomor:</div>
+            <div class="fw-semibold">
+              <i class="fa-solid fa-phone me-1"></i>
+              <span id="phone-label"></span>
+            </div>
+          </div>
+
+          <form id="profile-form" novalidate>
+            <div class="mb-3">
+              <label for="full_name" class="form-label">Nama Lengkap</label>
+              <input type="text" id="full_name" class="form-control" placeholder="Nama sesuai yang mau tampil di app"
+                required />
+              <div class="form-text text-muted">
+                Hanya huruf, spasi, dan titik (misal: "Rani A. Putri").
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="new_password" class="form-label">Password Baru</label>
+              <input type="password" id="new_password" class="form-control" placeholder="Min. 6 karakter" required />
+            </div>
+
+            <div class="mb-3">
+              <label for="confirm_password" class="form-label">Ulangi Password Baru</label>
+              <input type="password" id="confirm_password" class="form-control" placeholder="Ketik ulang password"
+                required />
+            </div>
+
+            <button type="submit" id="save-btn" class="btn btn-primary w-100 mt-2 mb-2">
+              <span class="btn-text">Simpan Profil</span>
+              <span class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span>
+            </button>
+          </form>
+
+          <p class="small text-muted mb-0">
+            Setelah profil tersimpan, kamu akan diarahkan ke halaman utama QQQUANTA.
+          </p>
+        </div>
+
+        <div id="not-logged-box" class="d-none">
+          <div class="alert alert-warning mb-3">
+            Tidak ditemukan sesi login yang aktif. Silakan login atau daftar ulang.
+          </div>
+          <a href="login.html" class="btn btn-primary w-100 mb-2">Login</a>
+          <a href="register.html" class="btn btn-outline-secondary w-100">Daftar Baru</a>
+        </div>
+      </div>
+
+      <div class="auth-footer p-4 d-flex align-items-center justify-content-between">
+        <span class="small">
+          Mau kembali ke halaman utama?
+          <a href="index.html" class="ms-1 link-primary">Buka QQQUANTA</a>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      window.addEventListener("DOMContentLoaded", () => {
+        console.log("[profile] init");
+
+        const isLocal =
+          location.hostname === "localhost" || location.hostname === "127.0.0.1";
+        const AUTH_BASE = isLocal
+          ? "http://127.0.0.1:8786"
+          : "https://auth-uid.mkemalw.workers.dev";
+
+        // ==== DOM ====
+        const alertArea = document.getElementById("alert-area");
+        const loadingBox = document.getElementById("loading-box");
+        const profileBox = document.getElementById("profile-box");
+        const notLoggedBox = document.getElementById("not-logged-box");
+        const phoneLabel = document.getElementById("phone-label");
+
+        const form = document.getElementById("profile-form");
+        const nameInput = document.getElementById("full_name");        // ✅ sesuai HTML
+        const passInput = document.getElementById("new_password");     // ✅ sesuai HTML
+        const confirmInput = document.getElementById("confirm_password"); // ✅ tambahan
+        const saveBtn = document.getElementById("save-btn");
+
+        function showAlert(msg, type = "warning") {
+          if (!alertArea) return;
+          alertArea.innerHTML = `
+          <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${msg}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>`;
+        }
+
+        function clearAlert() {
+          if (alertArea) alertArea.innerHTML = "";
+        }
+
+        function showSection({ loading = false, profile = false, notLogged = false }) {
+          if (loadingBox) loadingBox.classList.toggle("d-none", !loading);
+          if (profileBox) profileBox.classList.toggle("d-none", !profile);
+          if (notLoggedBox) notLoggedBox.classList.toggle("d-none", !notLogged);
+        }
+
+        async function fetchMe() {
+          try {
+            const resp = await fetch(AUTH_BASE + "/me", {
+              credentials: "include",
+            });
+            const data = await resp.json().catch(() => ({}));
+            console.log("[profile] /me", resp.status, data);
+
+            // 🔴 DEBUG: lihat isi /me di profile
+            alert("[profile] /me response: " + JSON.stringify(data));
+
+            return data;
+          } catch (e) {
+            console.error("[profile] /me error", e);
+            alert("[profile] /me ERROR: " + (e.message || String(e)));
+            return { logged_in: false };
+          }
+        }
+
+
+        async function updateProfile(full_name, new_password) {
+          const resp = await fetch(AUTH_BASE + "/profile/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ full_name, new_password }),
+          });
+
+          const data = await resp.json().catch(() => ({}));
+          console.log("[profile] /profile/update", resp.status, data);
+
+          if (!resp.ok || !data.ok) {
+            if (data.reason === "missing_fields") {
+              throw new Error("Nama lengkap dan password wajib diisi.");
+            }
+            if (data.reason === "invalid_name") {
+              throw new Error("Nama hanya boleh huruf, spasi, dan titik.");
+            }
+            if (data.reason === "weak_password") {
+              throw new Error("Password minimal 6 karakter.");
+            }
+            if (data.reason === "not_logged_in") {
+              throw new Error("Sesi login tidak ditemukan. Silakan login ulang.");
+            }
+            throw new Error(data.error || resp.statusText || "Gagal menyimpan profil.");
+          }
+          return data;
+        }
+
+        // ==== Step 1: cek sesi ====
+        (async () => {
+          showSection({ loading: true, profile: false, notLogged: false });
+
+          const me = await fetchMe();
+
+          // DEBUG – lihat apa yang dikembalikan backend
+          alert("[profile] setelah fetchMe → logged_in=" + me.logged_in +
+            ", must_update_profile=" + (me.user && me.user.must_update_profile));
+
+          // === CASE 1: user tidak login ===
+          if (!me.logged_in) {
+            showAlert("Tidak ditemukan sesi login yang aktif. Silakan login atau daftar ulang.", "warning");
+            showSection({ loading: false, profile: false, notLogged: true });
+            return;
+          }
+
+          // === CASE 2: user login ===
+          // isi info nomor hp bila ada
+          if (phoneLabel && me.user && me.user.phone) {
+            phoneLabel.textContent = me.user.phone;
+          }
+
+          // Interpret must_update flag (biar jelas)
+          const rawMup = me.user && me.user.must_update_profile;
+          const mupFlag =
+            rawMup === true ||
+            rawMup === 1 ||
+            rawMup === "1";
+
+          alert("[profile] interpreted must_update_profile = " + mupFlag);
+
+          // TAMPILKAN form profil (baik mupFlag true atau false)
+          // Kenapa?
+          // ✔ Karena profile.html TIDAK lagi melakukan auto redirect ke index
+          // ✔ Index.html yang akan menolak user kalau profil belum lengkap
+          showSection({ loading: false, profile: true, notLogged: false });
+
+          // Pre-fill nama kalau backend sudah kasih
+          if (nameInput && !nameInput.value && me.user && me.user.name) {
+            nameInput.value = me.user.name;
+          }
+
+        })();
+
+
+        // ==== Step 2: submit form profil ====
+        if (form) {
+          form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            clearAlert();
+
+            const full_name = nameInput ? nameInput.value.trim() : "";
+            const new_password = passInput ? passInput.value : "";
+            const confirm_password = confirmInput ? confirmInput.value : "";
+
+            if (!full_name || !new_password || !confirm_password) {
+              showAlert("Nama lengkap dan kedua password wajib diisi.", "warning");
+              alert("[profile] submit: field kosong");
+              return;
+            }
+
+            if (new_password !== confirm_password) {
+              showAlert("Password dan konfirmasi password tidak sama.", "warning");
+              alert("[profile] submit: password != confirm");
+              return;
+            }
+
+            alert("[profile] submit: kirim ke /profile/update dengan full_name = " + full_name);
+
+            if (saveBtn) saveBtn.disabled = true;
+            try {
+              const resp = await updateProfile(full_name, new_password);
+              alert("[profile] /profile/update OK: " + JSON.stringify(resp));
+
+              showAlert("Profil berhasil disimpan. Mengarahkan ke QQQUANTA...", "success");
+              setTimeout(() => {
+                alert("[profile] redirect ke index.html setelah update berhasil");
+                window.location.href = "index.html";
+              }, 900);
+            } catch (err) {
+              console.error(err);
+              alert("[profile] /profile/update ERROR: " + (err.message || String(err)));
+              showAlert(err.message || "Terjadi kesalahan saat menyimpan profil.", "danger");
+            } finally {
+              if (saveBtn) saveBtn.disabled = false;
+            }
+          });
+        }
+
+
+
+      });
+    })();
+  </script>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

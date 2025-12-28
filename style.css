@@ -1,0 +1,282 @@
+#about-us-embed {
+  width: 100%;
+  border: 0;
+  box-shadow: #eee 0px 5px 20px 0px
+}
+
+/* ---------- 9) EMITEN LIST / INFO ---------- */
+#emiten-list {
+  gap: .5rem !important;
+}
+
+#emiten-list a {
+  text-decoration: none;
+  width: auto;
+  min-width: 30%;
+}
+
+.emiten-info {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* ---------- 10) COUNTDOWN ---------- */
+#countdown {
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--primary) !important;
+}
+
+/* ---------- 11) LINKS ---------- */
+.text-center a {
+  color: var(--primary) !important;
+  text-decoration: none;
+}
+
+.text-center a:hover {
+  text-decoration: underline;
+}
+
+/* ---------- 12) TOP PICKS – GRID & CARDS ---------- */
+/* 3 kolom di desktop (sesuai file lama) */
+/* :contentReference[oaicite:2]{index=2} */
+.picks-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .75rem;
+}
+
+#pickCard {
+  width: 12.5rem;
+}
+
+/* Mobile: jadi scroller horizontal dengan snap */
+/* :contentReference[oaicite:3]{index=3} */
+@media (max-width:960px) {
+  #picksOuter {
+    width: 100%;
+  }
+
+  .picks-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 1rem;
+    padding-bottom: .75rem;
+    scroll-snap-type: x mandatory;
+  }
+
+  .pick-card {
+    flex: 0 0 70%;
+    scroll-snap-align: start;
+  }
+
+  /* :contentReference[oaicite:4]{index=4} */
+  .picks-grid>.pick-card:first-child {
+    margin-left: 1rem;
+  }
+
+  .picks-grid>.pick-card:last-child {
+    margin-right: 1rem;
+  }
+
+  .picks-grid::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Kartu */
+#top-picks .pick-card {
+  position: relative;
+}
+
+/* :contentReference[oaicite:5]{index=5} */
+.pick-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.pick-head {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .25rem;
+}
+
+.pick-ticker {
+  letter-spacing: -.02em;
+  margin: 0;
+}
+
+.pick-score {
+  font-size: .9rem;
+  color: var(--muted);
+}
+
+/* Progress bar (warna di-set inline JS; ini hanya base + animasi) */
+.score-rail {
+  width: 100%;
+  height: 10px;
+  background: #edf2f7;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: .35rem 0 .5rem;
+}
+
+.score-fill {
+  height: 100%;
+  transition: width .25s ease, background .25s ease;
+}
+
+/* Bullets & badge */
+.pick-bullets {
+  margin: 0;
+  padding-left: 1.1rem;
+  min-height: 150px;
+  width: 14rem;
+}
+
+.pick-bullets li {
+  margin: .15rem 0;
+}
+
+.pick-bullets li>strong {
+  color: #007bff;
+  text-transform: uppercase;
+}
+
+.pick-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .8rem;
+  padding: .25rem .5rem;
+  border-radius: 999px;
+  background: #eaf4ff;
+  color: var(--primary);
+}
+
+.pick-cta {
+  margin-top: .75rem;
+  width: 100%;
+}
+
+/* ---------- 13) STALE DIMMING (drop-in, tidak mengganggu yang lain) ---------- */
+/* aktif ketika JS memberi class #top-picks.is-stale */
+/* :contentReference[oaicite:6]{index=6} */
+#top-picks.is-stale .pick-card {
+  opacity: .55;
+  filter: grayscale(40%) saturate(85%);
+  transition: opacity .2s, filter .2s;
+}
+
+#top-picks.is-stale .pick-card:hover {
+  opacity: .85;
+  filter: none;
+}
+
+/* ---------- 14) REKO TABLE ---------- */
+
+#dump-wrap {
+  overflow-x: auto;
+}
+
+#dump-wrap>div:nth-child(2) {
+  display: none
+}
+
+#reko-section h5 {
+  letter-spacing: -.01em;
+}
+
+#reko-thead th,
+#dump-wrap th {
+  color: #475569;
+  position: sticky;
+  top: 0;
+  background: #fafafa;
+}
+
+/* :contentReference[oaicite:7]{index=7} */
+#reko-tbody td,
+#dump-wrap td {
+  border: none;
+  vertical-align: middle;
+}
+
+/* :contentReference[oaicite:8]{index=8} */
+.reko-right {
+  text-align: right;
+}
+
+.reko-pos {
+  color: #0a7f4f;
+  font-weight: 600;
+}
+
+.reko-neg {
+  color: #b71c1c;
+  font-weight: 600;
+}
+
+.reko-small {
+  font-size: 12px;
+  color: #64748b;
+}
+
+#reko-tbody table thead tr th,
+#dump-wrap table thead tr th {
+  background: #ddd;
+  font-size: .9rem;
+  text-align: center !important;
+}
+
+/* :contentReference[oaicite:9]{index=9} */
+
+/* --- feed chips (NM/MK) --- */
+.feed-chip {
+  display: inline-block;
+  font-size: .72rem;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: .02em;
+  padding: .275rem .55rem;
+  border-radius: 999px;
+}
+
+.feed-chip.nm {
+  background: #0f766e;
+  color: #fff;
+}
+
+/* non-markov, optional */
+.feed-chip.mk {
+  background: #6f42c1;
+  color: #fff;
+}
+
+/* markov */
+
+
+
+/* Loading shimmer */
+.reko-shimmer {
+  height: 56px;
+  background: linear-gradient(90deg, #f4f4f4 0%, #eaeaea 50%, #f4f4f4 100%);
+  background-size: 200% 100%;
+  animation: rekoShimmer 1.3s infinite;
+  border-radius: 8px;
+}
+
+@keyframes rekoShimmer {
+  0% {
+    background-position: 200% 0
+  }
+
+  100% {
+    background-position: -200% 0
+  }
+}

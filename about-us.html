@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dasbor Analisis Sistem Rekomendasi Saham</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Fintech Calm -->
+    <!-- Application Structure Plan: SPA dengan navigasi sticky di atas untuk melompat ke bagian tematik: Ringkasan, Arsitektur & Alur Kerja, Inti Prediktif (Model Markov), Keunggulan Data (RPA), dan Kerangka Operasional. Struktur ini memecah laporan teknis yang padat menjadi segmen-segmen yang mudah dicerna. Alur kerja interaktif menjadi pusat eksplorasi, memungkinkan pengguna untuk mengklik komponen dan melihat detailnya. Pendekatan ini lebih unggul dari format laporan linier karena memfasilitasi pemahaman non-linear dan penemuan mandiri, yang sangat penting untuk memahami sistem multi-komponen yang kompleks. -->
+    <!-- Visualization & Content Choices: 1) Alur Kerja: Diagram HTML/CSS interaktif (Goal: Organize, Method: HTML/CSS+JS, Interaction: Click-to-reveal-details) untuk memetakan proses sistem. 2) Komponen Sistem: Diagram Polar Area Chart.js (Goal: Compare, Method: Chart.js Canvas, Interaction: Hover tooltips) untuk menunjukkan peran relatif setiap komponen. 3) Model Markov: Diagram Donat Chart.js dinamis (Goal: Inform/Relationships, Method: Chart.js Canvas, Interaction: User selects state to update probability chart) untuk mensimulasikan probabilitas transisi. 4) Jadwal Cron: Tabel HTML terstruktur (Goal: Organize, Method: HTML, Interaction: Hover tooltips) untuk kejelasan operasional. Pilihan ini secara khusus menghindari SVG/Mermaid dan menggunakan kanvas dan HTML/CSS untuk visualisasi dinamis dan statis, memastikan interaktivitas dan kepatuhan terhadap batasan. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+        }
+
+        .container {
+            max-width: 960px !important;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+
+        .nav-link {
+            transition: color 0.3s ease, border-bottom-color 0.3s ease;
+        }
+
+        .nav-link.active,
+        .nav-link:hover {
+            color: #0d6efd;
+            border-bottom-color: #0d6efd;
+        }
+
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+
+        .modal-overlay {
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-content {
+            transition: transform 0.3s ease;
+        }
+
+        .workflow-node {
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        .workflow-node:hover {
+            transform: scale(1.03);
+            background-color: #e9ecef;
+        }
+    </style>
+</head>
+
+<body class="antialiased">
+
+    <main class="bg-white my-4 container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <section class="text-center">
+            <h2 style="font-family: georgia;" class="text-xl md:text-2xl text-gray-700">Research By</h2>
+            <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">Kami menggunakan forward testing selama hampir 2.5 tahun dan research akan terus berlanjut untuk kemajuan qunat financing di Indonesia.</p>
+            <div class="grid md:grid-cols-2 items-center width: 85%;margin: auto;">
+                <!-- Kiri -->
+                <div class="d-flex flex-column align-items-center p-4 m-4">
+                    <img src="img/rani.jpg" class="mb-2"  style="margin: auto;width:40%;border-radius: 50%;">
+                    <strong>Rani Sadiah F</strong>
+                    <div>Analyst</div>
+                </div>
+                <!-- Kanan -->
+                <div class="d-flex flex-column align-items-center p-4 m-4">
+                    <img src="img/kemla.jpeg" class="mb-2"  style="margin: auto;width:40%;;border-radius: 50%">
+                    <strong>Kemal Wiryawan</strong>
+                    <div>Quant Finance SME</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="ringkasan" class="mb-16 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-2xl md:text-3xl font-bold text-gray-700">Analisis Sistem Rekomendasi Algoritmik</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">Sebuah platform otomatis untuk menghasilkan
+                    rekomendasi perdagangan di pasar saham Indonesia, dirancang khusus untuk investor institusional.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class=" p-6 text-center">
+                    <div class="text-4xl mb-3">🎯</div>
+                    <h3 class="text-lg font-semibold mb-2">Klien Tertuju</h3>
+                    <p class="text-gray-600">Disesuaikan untuk kebutuhan strategis <strong class="font-semibold">BPJS
+                            Ketenagakerjaan (BPJS-TK)</strong>, dana jaminan sosial nasional.</p>
+                </div>
+                <div class=" p-6 text-center">
+                    <div class="text-4xl mb-3">🧠</div>
+                    <h3 class="text-lg font-semibold mb-2">Teknologi Inti</h3>
+                    <p class="text-gray-600">Menggunakan <strong class="font-semibold">Model Rantai Markov</strong>
+                        untuk prediksi probabilistik pergerakan harga saham.</p>
+                </div>
+                <div class=" p-6 text-center">
+                    <div class="text-4xl mb-3">🤖</div>
+                    <h3 class="text-lg font-semibold mb-2">Otomatisasi Penuh</h3>
+                    <p class="text-gray-600">Alur kerja dari akuisisi data hingga pengiriman laporan diorkestrasi secara
+                        otomatis oleh <strong class="font-semibold">Cron & Shell Scripts</strong>.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="arsitektur" class="mb-16 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-2xl md:text-3xl font-bold text-gray-700">Arsitektur & Alur Kerja Sistem</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">Visualisasi alur proses dari penyerapan data
+                    mentah hingga menjadi rekomendasi yang dapat ditindaklanjuti. Klik pada setiap komponen untuk
+                    melihat detailnya.</p>
+            </div>
+            <div class="bg-white p-8 rounded-xl shadow-lg">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-center text-center">
+                    <div class="workflow-node p-4 rounded-lg border border-gray-200" data-id="data-ingestion">
+                        <div class="text-3xl mb-2">📥</div>
+                        <h4 class="font-semibold">1. Penyerapan Data</h4>
+                        <p class="text-xs text-gray-500">Data publik & propieter</p>
+                    </div>
+                    <div class="text-2xl text-gray-400 hidden md:block">→</div>
+                    <div class="workflow-node p-4 rounded-lg border border-gray-200" data-id="data-processing">
+                        <div class="text-3xl mb-2">💾</div>
+                        <h4 class="font-semibold">2. Caching & Pra-pemrosesan</h4>
+                        <p class="text-xs text-gray-500">Cache multi-frekuensi</p>
+                    </div>
+                    <div class="text-2xl text-gray-400 hidden md:block">→</div>
+                    <div class="workflow-node p-4 rounded-lg border border-gray-200" data-id="modeling">
+                        <div class="text-3xl mb-2">📈</div>
+                        <h4 class="font-semibold">3. Eksekusi Model</h4>
+                        <p class="text-xs text-gray-500">Prediksi Rantai Markov</p>
+                    </div>
+                    <div class="text-2xl text-gray-400 hidden md:block">→</div>
+                    <div class="workflow-node p-4 rounded-lg border border-gray-200" data-id="synthesis">
+                        <div class="text-3xl mb-2">📊</div>
+                        <h4 class="font-semibold">4. Sintesis & Peringkat</h4>
+                        <p class="text-xs text-gray-500">Logika "Top 10"</p>
+                    </div>
+                    <div class="text-2xl text-gray-400 hidden md:block">→</div>
+                    <div class="workflow-node p-4 rounded-lg border border-gray-200" data-id="delivery">
+                        <div class="text-3xl mb-2">📤</div>
+                        <h4 class="font-semibold">5. Pengiriman Laporan</h4>
+                        <p class="text-xs text-gray-500">CSV untuk BPJS-TK</p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-12">
+                <h3 class="text-2xl font-bold text-center mb-6 text-gray-800">Distribusi Peran Komponen Sistem</h3>
+                <div class="chart-container">
+                    <canvas id="componentsChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="model" class="mb-16 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-2xl md:text-3xl font-bold text-gray-700">Inti Prediktif: Model Rantai Markov</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">Model ini memprediksi pergerakan harga di masa
+                    depan dengan menganalisis probabilitas transisi antar keadaan harga historis. Pilih keadaan saat ini
+                    untuk melihat kemungkinan keadaan berikutnya.</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-8 items-center">
+                <div class="p-6">
+                    <h3 class="text-xl font-semibold mb-4">Simulasi Probabilitas Transisi</h3>
+                    <p class="text-gray-600 mb-4">Sistem mengubah pergerakan harga menjadi 10 keadaan diskrit (desil).
+                        Matriks transisi menghitung probabilitas perpindahan dari satu keadaan ke keadaan lainnya.</p>
+                    <div class="mb-4">
+                        <label for="state-selector" class="block text-sm font-medium text-gray-700">Pilih Keadaan Harga
+                            Saat Ini:</label>
+                        <select id="state-selector"
+                            class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                            <option value="0">Keadaan 1 (Penurunan Terbesar)</option>
+                            <option value="1">Keadaan 2</option>
+                            <option value="2">Keadaan 3</option>
+                            <option value="3">Keadaan 4</option>
+                            <option value="4" selected>Keadaan 5 (Stabil)</option>
+                            <option value="5">Keadaan 6</option>
+                            <option value="6">Keadaan 7</option>
+                            <option value="7">Keadaan 8</option>
+                            <option value="8">Keadaan 9</option>
+                            <option value="9">Keadaan 10 (Kenaikan Tertinggi)</option>
+                        </select>
+                    </div>
+                    <div id="model-explanation" class="text-sm text-gray-500 p-3 bg-gray-50 rounded-md">
+                        Pilih sebuah keadaan untuk melihat analisis probabilitasnya.
+                    </div>
+                </div>
+                <div class="chart-container h-80 md:h-96">
+                    <canvas id="markovChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="rpa" class="mb-16 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-2xl md:text-3xl font-bold text-gray-700">Keunggulan Data dengan RPA</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">Sistem ini menggunakan Otomatisasi Proses
+                    Robotik (RPA) untuk mengekstrak data propieter dari platform pialang IPOT, memberikan keunggulan
+                    informasional yang tidak tersedia melalui API publik.</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="card p-6">
+                    <h3 class="text-xl font-semibold mb-4 text-center">Data Pasar Publik</h3>
+                    <p class="text-gray-600 mb-4">Diambil menggunakan pustaka standar seperti `yfinance`.</p>
+                    <ul class="space-y-2">
+                        <li class="flex items-center"><span class="text-green-500 mr-2">✔</span> Harga (Open, High, Low,
+                            Close)</li>
+                        <li class="flex items-center"><span class="text-green-500 mr-2">✔</span> Volume Perdagangan</li>
+                        <li class="flex items-center"><span class="text-green-500 mr-2">✔</span> Data Historis Harian &
+                            Intraday</li>
+                    </ul>
+                </div>
+                <div class="card p-6 border-2 border-blue-500">
+                    <h3 class="text-xl font-semibold mb-4 text-center">Data Propieter via RPA (IPOT)</h3>
+                    <p class="text-gray-600 mb-4">Diekstrak dengan bot otomatis yang masuk ke platform pialang.</p>
+                    <ul class="space-y-2">
+                        <li class="flex items-center"><span class="text-blue-500 mr-2">✔</span> Ringkasan Pialang Pasar
+                        </li>
+                        <li class="flex items-center"><span class="text-blue-500 mr-2">✔</span> Aktivitas Saham oleh
+                            Pialang</li>
+                        <li class="flex items-center"><span class="text-blue-500 mr-2">✔</span> Data Buku Pesanan
+                            Terperinci</li>
+                        <li class="flex items-center"><span class="text-blue-500 mr-2">✔</span> Analisis & Harga Target
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="operasional" class="scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-2xl md:text-3xl font-bold text-gray-700">Kerangka Operasional</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">Seluruh alur kerja diorkestrasi oleh penjadwal
+                    `cron` yang tangguh, memastikan eksekusi tepat waktu yang selaras dengan jam perdagangan pasar.</p>
+            </div>
+            <div class="card overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">Waktu Eksekusi</th>
+                                <th scope="col" class="px-6 py-3">Nama Tugas</th>
+                                <th scope="col" class="px-6 py-3">Tujuan Operasional</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="bg-white border-b">
+                                <td class="px-6 py-4 font-medium text-gray-900">09:00, Senin-Jumat</td>
+                                <td class="px-6 py-4"><code>cron_boot</code></td>
+                                <td class="px-6 py-4">Prosedur startup harian, persiapan data pra-pembukaan pasar.</td>
+                            </tr>
+                            <tr class="bg-gray-50 border-b">
+                                <td class="px-6 py-4 font-medium text-gray-900">11:30, Senin-Jumat</td>
+                                <td class="px-6 py-4"><code>cron_intraday</code></td>
+                                <td class="px-6 py-4">Menjalankan analisis data intraday menjelang penutupan sesi pagi.
+                                </td>
+                            </tr>
+                            <tr class="bg-white border-b">
+                                <td class="px-6 py-4 font-medium text-gray-900">15:15, Senin-Jumat</td>
+                                <td class="px-6 py-4"><code>cron_intraday</code></td>
+                                <td class="px-6 py-4">Menjalankan analisis kedua untuk data menjelang penutupan pasar.
+                                </td>
+                            </tr>
+                            <tr class="bg-gray-50 border-b">
+                                <td class="px-6 py-4 font-medium text-gray-900">15:50, Senin-Jumat</td>
+                                <td class="px-6 py-4"><code>cron_kv_sync</code></td>
+                                <td class="px-6 py-4">Sinkronisasi data dan persiapan untuk hari perdagangan berikutnya.
+                                </td>
+                            </tr>
+                            <tr class="bg-white">
+                                <td class="px-6 py-4 font-medium text-gray-900">Setiap 15 Menit</td>
+                                <td class="px-6 py-4"><code>markov_15_cron</code></td>
+                                <td class="px-6 py-4">Pembaruan model Markov secara berkala dengan data frekuensi
+                                    tinggi.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="modal"
+        class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 z-50">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 transform scale-95">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modal-title" class="text-xl font-bold text-gray-800">Detail Komponen</h3>
+                <button id="modal-close" class="text-gray-500 hover:text-gray-800">&times;</button>
+            </div>
+            <div id="modal-body" class="text-gray-600">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const modalData = {
+                'data-ingestion': {
+                    title: '1. Penyerapan Data',
+                    content: `
+                        <p>Tahap awal ini berfokus pada pengumpulan data dari berbagai sumber. Sistem menggunakan pendekatan ganda:</p>
+                        <ul class="list-disc list-inside mt-2 space-y-1">
+                            <li><strong>Data Publik:</strong> Menggunakan pustaka <strong>yfinance</strong> untuk mengambil data harga dan volume historis serta intraday dari Bursa Efek Indonesia.</li>
+                            <li><strong>Data Propieter:</strong> Menerapkan bot <strong>Robotic Process Automation (RPA)</strong> untuk masuk ke platform pialang IPOT dan mengekstrak data bernilai tinggi yang tidak tersedia secara publik, seperti ringkasan pialang dan data buku pesanan.</li>
+                        </ul>
+                    `
+                },
+                'data-processing': {
+                    title: '2. Caching & Pra-pemrosesan',
+                    content: `
+                        <p>Data yang telah dikumpulkan disimpan dalam struktur cache yang canggih untuk efisiensi dan kecepatan. Terdapat empat lapisan cache berdasarkan frekuensi waktu:</p>
+                        <ul class="list-disc list-inside mt-2 space-y-1">
+                            <li><strong>cache_1m, cache_5m, cache_15m:</strong> Menyimpan data frekuensi tinggi untuk analisis dan prediksi intraday.</li>
+                            <li><strong>cache_daily:</strong> Menyimpan data harian untuk pelatihan model jangka panjang dan membangun matriks probabilitas transisi.</li>
+                        </ul>
+                        <p class="mt-2">Pemisahan ini memungkinkan model dilatih pada data historis yang stabil sambil tetap responsif terhadap pergerakan pasar real-time.</p>
+                    `
+                },
+                'modeling': {
+                    title: '3. Eksekusi Model Prediktif',
+                    content: `
+                        <p>Ini adalah inti dari sistem di mana prediksi dibuat. Prosesnya meliputi:</p>
+                        <ol class="list-decimal list-inside mt-2 space-y-1">
+                            <li><strong>Diskritisasi Keadaan:</strong> Data harga kontinu diubah menjadi 10 keadaan diskrit (desil) untuk menyederhanakan model.</li>
+                            <li><strong>Aplikasi Matriks Transisi:</strong> Sistem menggunakan matriks probabilitas transisi yang telah dibangun sebelumnya (dari data harian) untuk menghitung probabilitas keadaan berikutnya berdasarkan keadaan saat ini (dari data frekuensi tinggi).</li>
+                            <li><strong>Output Probabilistik:</strong> Hasilnya adalah vektor probabilitas untuk setiap saham, yang menunjukkan kemungkinan saham tersebut akan bergerak ke masing-masing dari 10 keadaan pada interval waktu berikutnya.</li>
+                        </ol>
+                    `
+                },
+                'synthesis': {
+                    title: '4. Sintesis & Peringkat Rekomendasi',
+                    content: `
+                        <p>Output probabilistik mentah dari model perlu diubah menjadi rekomendasi yang jelas dan dapat ditindaklanjuti. Layanan <strong>core-bpjs.py</strong> melakukan tugas ini:</p>
+                        <ul class="list-disc list-inside mt-2 space-y-1">
+                            <li><strong>Penerapan Logika Penilaian:</strong> Memberi peringkat saham berdasarkan kriteria tertentu, misalnya, probabilitas tertinggi untuk mencapai keadaan 9 atau 10 (kenaikan harga signifikan).</li>
+                            <li><strong>Penyaringan "Top 10":</strong> Memotong daftar yang telah diperingkat untuk hanya menyajikan 10 kandidat teratas, sesuai dengan kebutuhan klien akan rekomendasi yang ringkas.</li>
+                        </ul>
+                    `
+                },
+                'delivery': {
+                    title: '5. Pengiriman Laporan',
+                    content: `
+                        <p>Tahap akhir adalah pembuatan dan pengiriman laporan kepada klien, BPJS-TK. Proses ini disesuaikan dengan alur kerja profesional mereka:</p>
+                        <ul class="list-disc list-inside mt-2 space-y-1">
+                            <li><strong>Format File:</strong> Laporan dihasilkan dalam format CSV yang mudah diolah, dengan nama file yang terstruktur (misalnya, <code>bpjs_rekomendasi_YYYY-MM-DD_HHMM.csv</code>).</li>
+                            <li><strong>Pengiriman Tepat Waktu:</strong> Laporan dibuat pada waktu-waktu kritis selama hari perdagangan (misalnya, 09:30, 11:30, 14:15, 15:50) untuk mendukung pengambilan keputusan intraday.</li>
+                        </ul>
+                    `
+                }
+            };
+
+            const modal = document.getElementById('modal');
+            const modalOverlay = document.querySelector('.modal-overlay');
+            const modalClose = document.getElementById('modal-close');
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+
+            document.querySelectorAll('.workflow-node').forEach(node => {
+                node.addEventListener('click', () => {
+                    const data = modalData[node.dataset.id];
+                    if (data) {
+                        modalTitle.textContent = data.title;
+                        modalBody.innerHTML = data.content;
+                        modal.classList.remove('hidden');
+                        setTimeout(() => modal.classList.remove('opacity-0'), 10);
+                        setTimeout(() => document.querySelector('.modal-content').classList.remove('scale-95'), 10);
+                    }
+                });
+            });
+
+            const closeModal = () => {
+                document.querySelector('.modal-content').classList.add('scale-95');
+                modal.classList.add('opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            };
+
+            modalClose.addEventListener('click', closeModal);
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) {
+                    closeModal();
+                }
+            });
+
+            const componentsData = {
+                labels: ['Akuisisi Data', 'Orkestrasi', 'Model Prediktif', 'Layanan Rekomendasi', 'Manajemen Data'],
+                datasets: [{
+                    label: 'Peran Komponen dalam Sistem',
+                    data: [25, 20, 30, 15, 10],
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.5)',
+                        'rgba(255, 159, 64, 0.5)',
+                        'rgba(255, 99, 132, 0.5)',
+                        'rgba(75, 192, 192, 0.5)',
+                        'rgba(153, 102, 255, 0.5)'
+                    ],
+                    borderColor: [
+                        'rgb(54, 162, 235)',
+                        'rgb(255, 159, 64)',
+                        'rgb(255, 99, 132)',
+                        'rgb(75, 192, 192)',
+                        'rgb(153, 102, 255)'
+                    ],
+                    borderWidth: 1
+                }]
+            };
+
+            const componentsCtx = document.getElementById('componentsChart').getContext('2d');
+            new Chart(componentsCtx, {
+                type: 'polarArea',
+                data: componentsData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            pointLabels: {
+                                display: true,
+                                centerPointLabels: true,
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return `${context.label}: ${context.raw}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const markovTransitionMatrix = [
+                [0.40, 0.20, 0.15, 0.10, 0.05, 0.04, 0.03, 0.01, 0.01, 0.01],
+                [0.25, 0.30, 0.20, 0.10, 0.05, 0.04, 0.03, 0.01, 0.01, 0.01],
+                [0.10, 0.20, 0.35, 0.15, 0.10, 0.05, 0.02, 0.01, 0.01, 0.01],
+                [0.05, 0.10, 0.20, 0.30, 0.15, 0.10, 0.05, 0.02, 0.02, 0.01],
+                [0.02, 0.05, 0.10, 0.15, 0.36, 0.15, 0.10, 0.05, 0.01, 0.01],
+                [0.01, 0.02, 0.05, 0.10, 0.15, 0.30, 0.20, 0.10, 0.05, 0.02],
+                [0.01, 0.01, 0.02, 0.05, 0.10, 0.15, 0.35, 0.20, 0.10, 0.01],
+                [0.01, 0.01, 0.01, 0.02, 0.03, 0.04, 0.20, 0.30, 0.25, 0.13],
+                [0.01, 0.01, 0.01, 0.01, 0.03, 0.04, 0.05, 0.15, 0.30, 0.39],
+                [0.01, 0.01, 0.01, 0.01, 0.01, 0.03, 0.04, 0.05, 0.20, 0.63]
+            ];
+
+            const markovLabels = Array.from({ length: 10 }, (_, i) => `Keadaan ${i + 1}`);
+            const markovCtx = document.getElementById('markovChart').getContext('2d');
+            const markovChart = new Chart(markovCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: markovLabels,
+                    datasets: [{
+                        label: 'Probabilitas Keadaan Berikutnya',
+                        data: markovTransitionMatrix[4],
+                        backgroundColor: [
+                            '#dc2626', '#ef4444', '#f87171', '#fca5a5', '#fecaca',
+                            '#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e'
+                        ],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Distribusi Probabilitas Keadaan Berikutnya'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += (context.parsed * 100).toFixed(1) + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const stateSelector = document.getElementById('state-selector');
+            const explanationDiv = document.getElementById('model-explanation');
+
+            function updateMarkovChart(stateIndex) {
+                markovChart.data.datasets[0].data = markovTransitionMatrix[stateIndex];
+                markovChart.update();
+
+                const probabilities = markovTransitionMatrix[stateIndex];
+                const maxProb = Math.max(...probabilities);
+                const mostLikelyState = probabilities.indexOf(maxProb) + 1;
+                explanationDiv.innerHTML = `Dari <strong>${stateSelector.options[stateIndex].text}</strong>, keadaan berikutnya yang paling mungkin adalah <strong>Keadaan ${mostLikelyState}</strong> dengan probabilitas <strong>${(maxProb * 100).toFixed(1)}%</strong>.`;
+            }
+
+            stateSelector.addEventListener('change', (e) => {
+                updateMarkovChart(parseInt(e.target.value));
+            });
+
+            updateMarkovChart(4);
+
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 80) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').includes(current)) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
