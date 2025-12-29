@@ -1,0 +1,1893 @@
+<!DOCTYPE html>
+<html lang="id">
+<!--
+QQQUANTA
+Version: v1.9.2
+Changelog:
+- Full client-side image harvesting (FileReader + localStorage).
+- Single POST ke Worker di stage "Analisa Sekarang".
+- Global Ctrl+V → kirim ke upload bubble aktif (charts/macro).
+-->
+
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
+
+    <link rel="manifest" href="img/site.webmanifest" />
+    <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="img//favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="img//favicon-16x16.png">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet" />
+
+    <title>QUANTA: Free LLM and GPT Agentic AI Tools for Futures and Forex.</title>
+    <link rel="stylesheet" href="https://static.mkemalw.workers.dev/" />
+
+    <style>
+        /* ===============================
+       TEXT HELPERS
+    =============================== */
+        .capitalize-first {
+            display: inline-block;
+        }
+
+        .capitalize-first::first-letter {
+            text-transform: uppercase;
+        }
+
+        .capitalize-first.sentence {
+            display: inline-block;
+            text-transform: lowercase;
+        }
+
+        .capitalize-first.sentence::first-letter {
+            text-transform: uppercase;
+        }
+
+        /* ===============================
+       LAYOUT: APP & CHAT WRAPPER
+    =============================== */
+        #app.container,
+        .container,
+        .chat-wrapper {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        #futures-wizard {
+            display: block;
+            border: none !important;
+            background-color: transparent !important;
+        }
+
+        #futures-wizard-wrap {
+            display: block;
+        }
+
+        .chat-wrapper {
+            display: block;
+            position: relative;
+            border: none !important;
+            background: transparent !important;
+        }
+
+        /* chat area (NO internal scroll) */
+        .chat-shell {
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .msg-row {
+            display: flex;
+            width: 100%;
+        }
+
+        .msg-row.assistant {
+            justify-content: flex-start;
+        }
+
+        .msg-row.user {
+            justify-content: flex-end;
+        }
+
+        /* ===============================
+       BUBBLES (assistant, user, sticker, analysis)
+    =============================== */
+        /* base bubble (assistant default white) */
+        .bubble {
+            max-width: 85%;
+            padding: 1rem 1.2rem;
+            border-radius: 14px;
+            line-height: 1.45;
+            white-space: pre-wrap;
+            word-break: break-word;
+            background: #fff;
+            color: #111;
+            border: 1px solid rgba(0, 0, 0, 0.07);
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.02);
+        }
+
+        .assistant .bubble {
+            border-top-left-radius: 2px;
+        }
+
+        /* user bubble */
+        .user .bubble {
+            border-top-right-radius: 2px;
+            background-color: cornflowerblue;
+            color: white;
+            border: none;
+            margin-bottom: 1rem;
+        }
+
+        /* sticker bubble (avatar) */
+        .bubble.sticker-bubble {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0;
+            max-width: 40%;
+        }
+
+        .bubble.sticker-bubble img {
+            display: block;
+            max-width: 120px;
+            height: auto;
+        }
+
+        /* upload bubble full width */
+        .assistant .bubble.upload-bubble {
+            max-width: 100% !important;
+            width: 100% !important;
+            text-align: center;
+        }
+
+        /* analysis bubble full width */
+        .assistant .bubble.analysis-bubble {
+            max-width: 100% !important;
+            width: 100% !important;
+        }
+
+        /* analysis bubble jangan ikut pre-wrap */
+        .analysis-bubble {
+            white-space: normal !important;
+        }
+
+        /* kalau ada code/pre mau tetap rapi */
+        .analysis-bubble pre,
+        .analysis-bubble code {
+            white-space: pre-wrap;
+        }
+
+        /* bubble list fix */
+        .bubble ul,
+        .bubble ol {
+            margin: 0 !important;
+            padding-left: 1.1rem;
+        }
+
+        /* small pills */
+        .pill {
+            display: inline-block;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            background: #f8f9fa;
+            margin-right: 6px;
+            margin-bottom: 6px;
+            padding: 6px 14px;
+            font-size: 0.9rem;
+        }
+
+        .section-title {
+            font-weight: 600;
+        }
+
+        /* ===============================
+       QUICK REPLIES
+    =============================== */
+        .quick-replies {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .quick-replies .btn {
+            border-radius: 999px;
+            padding: 6px 14px;
+            font-size: 0.9rem;
+            transition: 0.12s ease-in-out;
+        }
+
+        /* override hover kalau style.css nabrak */
+        .quick-replies .btn.btn-outline-primary:hover,
+        .quick-replies .btn.btn-outline-primary:focus,
+        .quick-replies .btn:hover,
+        .quick-replies .btn:focus {
+            background: #0d6efd !important;
+            border-color: #0d6efd !important;
+            color: #fff !important;
+        }
+
+        /* Quick reply Confirm di kanan, tidak "gelambir" */
+        .quick-replies.upload-confirm {
+            justify-content: flex-start;
+            align-items: center;
+        }
+
+        .quick-replies.upload-confirm .confirm-upload-btn {
+            border-radius: 999px;
+            padding: 6px 18px;
+            font-size: 0.9rem;
+            white-space: initial;
+        }
+
+        .quick-replies.upload-confirm .remaining-hint {
+            display: inline-flex;
+            align-items: center;
+            line-height: 1.2;
+            margin-top: 0;
+        }
+
+        /* ===============================
+       FILE DROP BOX + PREVIEW
+    =============================== */
+        .file-drop-box {
+            border: 1px dashed rgba(108, 117, 125, 0.4);
+            border-radius: 10px;
+            padding: 2rem 1rem;
+            text-align: center;
+            background: #fff;
+            cursor: pointer;
+            min-height: 12rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            position: relative;
+        }
+
+        .file-drop-box:hover {
+            background: #f8f9fa;
+        }
+
+        .file-drop-box .cloud-icon {
+            color: #6c757d;
+            font-size: 32px;
+        }
+
+        .file-drop-box .hint {
+            color: #6c757d;
+            font-size: 0.92rem;
+        }
+
+        .file-drop-box.drag-over {
+            background: #eef6ff;
+            border-color: rgba(13, 110, 253, 0.4);
+        }
+
+        /* grid preview */
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 8px;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .preview-item {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+            white-space: normal;
+        }
+
+        .preview-item img {
+            display: block;
+            width: 100%;
+            height: 110px;
+            object-fit: contain;
+            padding: 4px;
+        }
+
+        .preview-item .preview-remove {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            border: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.8);
+            color: #fff;
+            font-size: 0.8rem;
+            line-height: 20px;
+            text-align: center;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        /* ===============================
+       UPLOAD ACTIONS (Galeri / Kamera)
+    =============================== */
+        .upload-controls {
+            margin-top: 12px;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .upload-btn {
+            border-radius: 999px;
+            padding: 6px 18px;
+            font-size: 0.9rem;
+            border: 1px solid #d0d7e2;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .upload-btn i {
+            font-size: 0.95rem;
+        }
+
+        .upload-btn-gallery {
+            color: #111827;
+        }
+
+        .upload-btn-camera {
+            border-color: #0d6efd;
+            color: #0d6efd;
+            background: #f5f8ff;
+        }
+
+        .upload-btn:hover,
+        .upload-btn:focus {
+            background: #f3f4f6;
+        }
+
+        .upload-btn-camera:hover,
+        .upload-btn-camera:focus {
+            background: #e5f0ff;
+        }
+
+        /* mobile: full width */
+        @media (max-width: 480px) {
+            .upload-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .upload-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* ===============================
+       TABLE STYLING
+    =============================== */
+        .analysis-table {
+            font-size: 0.9rem;
+            margin-bottom: 0;
+        }
+
+        .analysis-table td,
+        .analysis-table th {
+            vertical-align: top;
+            padding: 6px 8px;
+        }
+
+        .analysis-table th {
+            width: 140px;
+            color: #6c757d;
+            font-weight: 600;
+            background: #f8f9fa;
+            font-size: 0.975rem;
+        }
+
+        /* table look lebih rapi di analysis bubble */
+        .analysis-bubble .table {
+            font-size: 0.9rem;
+        }
+
+        .analysis-bubble .table td {
+            vertical-align: top;
+            font-size: 0.975rem;
+        }
+
+        /* ===============================
+       COMPOSER (fixed bottom)
+    =============================== */
+        .chat-composer {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: 0 auto;
+            width: min(720px, calc(100% - 2rem));
+            z-index: 999;
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            padding: 8px;
+            border-radius: 12px 12px 0 0;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.06);
+        }
+
+        .chat-composer.disabled {
+            pointer-events: none;
+        }
+
+        .chat-composer.disabled .input-group {
+            opacity: 0.3;
+        }
+
+        .chat-composer textarea {
+            resize: none;
+            max-height: 120px;
+        }
+
+        /* ===============================
+       LOADING DOTS (validasi status)
+    =============================== */
+        .loading-dots {
+            display: inline-block;
+            margin-left: 2px;
+        }
+
+        .loading-dots span {
+            display: inline-block;
+            animation: loading-blink 1.2s infinite both;
+        }
+
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes loading-blink {
+
+            0%,
+            20% {
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        /* ===============================
+           TRADE STORY STRIP (Instagram-like)
+        =============================== */
+        .story-strip-wrapper {
+            margin-top: 8px;
+            margin-bottom: 12px;
+        }
+
+        .story-strip-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2px;
+            margin-bottom: 4px;
+        }
+
+        .story-strip-header span {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .story-strip {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 4px 2px 2px;
+        }
+
+        .story-strip::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .story-strip::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            background: rgba(148, 163, 184, 0.7);
+        }
+
+        .story-item {
+            flex: 0 0 auto;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #4b5563;
+            border: none;
+            background: transparent;
+            padding: 0;
+        }
+
+        .story-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 999px;
+            border: 2px solid #0d6efd;
+            padding: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+            box-shadow: 0 2px 4px rgba(15, 23, 42, 0.1);
+            margin: 0 auto 4px;
+        }
+
+        .story-avatar-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 999px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+        }
+
+        .story-symbol {
+            font-weight: 600;
+            font-size: 0.78rem;
+        }
+
+        .story-pl {
+            font-size: 0.68rem;
+        }
+
+        .story-pl.pos {
+            color: #16a34a;
+        }
+
+        .story-pl.neg {
+            color: #dc2626;
+        }
+
+        .story-label {
+            max-width: 70px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" class="container">
+        <section id="home-page">
+            <!--<div class="this-page border-bottom d-flex flex-row align-items-center justify-content-between px-3 py-1 mt-4"
+                style="background: transparent !important;border: none!important;">
+                <h2 class="d-flex text-center fs-6" style="font-weight: 500;">👋 Hi, Quant Trader!</h2>
+            </div>-->
+
+            <div class="this-page my-3 p-2" style="background-color: #e8ecec !important;">
+                <p class="d-block text-center mb-0">
+                    Dapatkan rekomendasi Agentic AI. <a href="about-us.html" style="color: dodgerblue;">Pelajari Lebih
+                        Lanjut</a>
+                </p>
+            </div>
+
+            <!-- Futures Wizard -->
+            <div id="futures-wizard" class="mb-4">
+                <div id="futures-wizard-wrap"></div>
+                <div id="futures-wizard-alert-wrap" class="mt-2" aria-live="polite"></div>
+            </div>
+        </section>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+
+        // ---------------------------
+        // Global helper functions
+        // ---------------------------
+
+        // otomatis deteksi development vs production
+        const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+        const AUTH_BASE = isLocal
+            ? "http://127.0.0.1:8786"
+            : "https://auth-uid.mkemalw.workers.dev";
+
+
+        const WORKER_BASE = isLocal
+            ? "http://127.0.0.1:8789"
+            : "https://asset-router.mkemalw.workers.dev";
+
+        const PREPROCESS_URL = WORKER_BASE + "/pass-imgs";
+        const ANALYZER_URL = WORKER_BASE + "/asset-analyzer";
+
+        // ===== Local storage helper =====
+        const STORAGE_KEYS = {
+            charts: "fw_charts_v1",
+            macro: "fw_macro_v1",
+        };
+
+        function saveImagesToStorage(storageKey, filesArr) {
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(filesArr));
+            } catch (err) {
+                console.warn("Failed to save images to localStorage:", err);
+            }
+        }
+
+        function loadImagesFromStorage(storageKey) {
+            try {
+                const raw = localStorage.getItem(storageKey);
+                if (!raw) return [];
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (err) {
+                console.warn("Failed to load images from localStorage:", err);
+                return [];
+            }
+        }
+
+
+        function humanizeLabel(v) {
+            if (v === null || v === undefined) return "TBD";
+            const s = String(v).trim();
+            if (!s) return "TBD";
+
+            // ganti _ jadi spasi
+            const withSpaces = s.replace(/_/g, " ");
+
+            // Title Case tiap kata
+            return withSpaces.replace(/\w\S*/g, (w) =>
+                w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+            );
+        }
+
+        function pretty(v) {
+            if (v === null || v === undefined || v === "") return "TBD";
+            const s = String(v);
+            return s.includes("_") ? humanizeLabel(s) : s;
+        }
+
+
+        function stripWhitespaceNodes($root) {
+            $root.find("*").addBack().contents().filter(function () {
+                return this.nodeType === 3 && !this.textContent.trim();
+            }).remove();
+        }
+
+        function escapeHtml(str) {
+            if (str == null) return "";
+            return String(str).replace(/[&<>"']/g, (c) => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            }[c] || c));
+        }
+
+        function showWarning(message) {
+            const warningDiv = $("<div class='alert alert-danger mt-2' role='alert'></div>").text(message);
+            const alertContainer = $("#futures-wizard-alert-wrap");
+            alertContainer.prepend(warningDiv);
+            const alerts = alertContainer.children('.alert');
+            if (alerts.length > 3) alerts.last().remove();
+            setTimeout(() => warningDiv.fadeOut(() => warningDiv.remove()), 2600);
+        }
+
+        let activeUploadCtx = null;
+
+        // =============== DEBUG / GUARD INDEX ===============
+        async function guardIndex() {
+            // Untuk sementara: JANGAN cek /me sama sekali,
+            // selalu izinkan stay di index sebagai guest.
+            // console.log("[index] guard /me dimatikan sementara");
+            return { guest: true, user: null };
+        }
+
+
+
+        $(document).ready(async function () {
+            const session = await guardIndex();
+            if (session && session.redirected) {
+                // sudah di-redirect ke profile.html
+                return;
+            }
+            // ---------------------------
+            // Trade Story (Newest Trade Story)
+            // ---------------------------
+            const tradeStoriesData = [
+                {
+                    id: "s1",
+                    symbol: "XAUUSD",
+                    label: "Gold scalp",
+                    direction: "LONG",
+                    pnl: "+1.8R"
+                },
+                {
+                    id: "s2",
+                    symbol: "CL",
+                    label: "Oil fade",
+                    direction: "SHORT",
+                    pnl: "+0.9R"
+                },
+                {
+                    id: "s3",
+                    symbol: "NQ",
+                    label: "NY open",
+                    direction: "LONG",
+                    pnl: "-0.5R"
+                },
+                {
+                    id: "s4",
+                    symbol: "MNQ",
+                    label: "Asia session",
+                    direction: "LONG",
+                    pnl: "+2.3R"
+                }
+            ];
+
+            function renderTradeStories(stories) {
+                const host = $("body    ");
+                if (!host.length || !stories || !stories.length) return;
+
+                const storyWrapper = $(`
+                <div class="container">
+                    <div class="story-strip-wrapper">
+                        <div class="story-strip-header"></div>
+                        <div class="story-strip"></div>
+                    </div>
+                </div>
+                `);
+
+                const strip = storyWrapper.find(".story-strip");
+
+                stories.forEach(s => {
+                    const isPos = typeof s.pnl === "string" && s.pnl.trim().startsWith("+");
+                    const pnlClass = isPos ? "pos" : "neg";
+
+                    const item = $(`
+                        <button type="button" class="story-item" data-story-id="${s.id}">
+                            <div class="story-avatar">
+                                <div class="story-avatar-inner">
+                                    <div class="story-symbol">${s.symbol}</div>
+                                    <div class="story-pl ${pnlClass}">${s.pnl}</div>
+                                </div>
+                            </div>
+                            <div class="story-label">${s.label}</div>
+                        </button>
+                    `);
+
+                    item.on("click", () => {
+                        const text = `📈 Trade Story: ${s.symbol} · ${s.direction} · P/L ${s.pnl} · ${s.label}`;
+                        if (typeof addAssistantText === "function") {
+                            addAssistantText(`<p class="mb-1">${text}</p>`);
+                        } else {
+                            console.log(text);
+                        }
+                    });
+
+                    strip.append(item);
+                });
+
+                // taruh DI ATAS wizard (tapi masih di dalam home-page)
+                host.prepend(storyWrapper);
+            }
+
+
+            // ---------------------------
+            // State
+            // ---------------------------
+            let wizardState = {
+                pair: null,      // "gold" | "oil" | "nasdaq" | "russell" | "sp500" | "nikkei" | "djia"
+                style: null,     // "intraday" | "swing" | "dead_retail_zone"
+                charts: [],
+                macro: [],
+                acceptedTrade: null
+            };
+
+
+            // ---------------------------
+            // UI setup (chat + composer)
+            // ---------------------------
+            const wrap = $("#futures-wizard-wrap");
+
+            const chatWrapperEl = $(`
+                    <div class="chat-wrapper" id="chat-wrapper">
+                    <div class="chat-shell" id="chat-shell"></div>
+
+                    <div class="chat-composer disabled" id="chat-composer">
+                        ...
+                    </div>
+                    </div>
+                `);
+
+            wrap.append(chatWrapperEl);
+            const chat = $("#chat-shell");
+            const chatWrapper = $("#chat-wrapper");
+
+
+            // reserve padding-bottom dynamically to avoid overlap
+            function syncComposerReserve() {
+                const h = $("#chat-composer").outerHeight() || 0;
+                chatWrapper.css("padding-bottom", (h + 16) + "px");
+            }
+            syncComposerReserve();
+            $(window).on("resize", syncComposerReserve);
+
+            function scrollToBottom() {
+                window.scrollTo(0, document.body.scrollHeight);
+            }
+
+            function addMessage(role, html) {
+                const row = $(`<div class="msg-row ${role}"></div>`);
+                const bubble = $(`<div class="bubble"></div>`);
+                bubble.append(html);
+                stripWhitespaceNodes(bubble);
+                row.append(bubble);
+                chat.append(row);
+                syncComposerReserve();
+                scrollToBottom();
+                return bubble;
+            }
+
+            function addAssistantText(text) {
+                return addMessage("assistant", `<div>${text}</div>`);
+            }
+            function addUserText(text) {
+                return addMessage("user", `<div>${text}</div>`);
+            }
+
+            function requiredCharts() {
+                // Intraday & Dead Retail Zone → fokus LTF (15m/5m/1m)
+                if (wizardState.style === "intraday" || wizardState.style === "dead_retail_zone") {
+                    return ["15M Chart", "5M Chart", "1M Chart"];
+                }
+                // Swing → pakai HTF
+                return ["4H Chart", "15M Chart", "5M Chart"];
+            }
+
+
+            // ---------------------------
+            // Quick replies helper
+            // ---------------------------
+            function addQuickReplies(bubble, options) {
+                const qr = $(`<div class="quick-replies mb-3"></div>`);
+
+                options.forEach(opt => {
+                    const btn = $(`<button class="btn btn-outline-primary btn-sm"></button>`);
+                    btn.text(opt.label);
+
+                    btn.on("click", (e) => {
+                        // ⬅️ begitu salah satu quick reply diklik:
+                        // kunci semua button di cluster ini
+                        qr.find("button").prop("disabled", true).addClass("disabled");
+
+                        if (typeof opt.onClick === "function") {
+                            opt.onClick(e);
+                        }
+                    });
+
+                    qr.append(btn);
+                });
+
+                bubble.append(qr);
+            }
+
+
+            // ---------------------------
+            // Composer enable/disable
+            // ---------------------------
+            function enableComposer() {
+                $("#chat-composer").removeClass("disabled");
+                $("#composer-input, #composer-send").prop("disabled", false);
+                $("#composer-hint").addClass("d-none");
+                $("#composer-input").attr("placeholder", "Ketik respon kamu di sini...");
+                syncComposerReserve();
+                scrollToBottom();
+            }
+            function disableComposer() {
+                $("#chat-composer").addClass("disabled");
+                $("#composer-input, #composer-send").prop("disabled", true);
+                $("#composer-input").val("").attr("placeholder", "Composer akan aktif setelah rekomendasi keluar...");
+                $("#composer-hint").removeClass("d-none");
+                syncComposerReserve();
+            }
+
+            $("#composer-send").on("click", function () {
+                const val = $("#composer-input").val().trim();
+                if (!val) return;
+                addUserText(val);
+                $("#composer-input").val("");
+            });
+
+            $("#composer-input").on("keydown", function (e) {
+                if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    $("#composer-send").click();
+                }
+            });
+
+            // Global handler: kalau ada image di clipboard, kirim ke upload bubble aktif
+            $(document).on("paste", function (e) {
+                if (!activeUploadCtx) return;
+
+                const $target = $(e.target);
+
+                // Hanya block paste kalau user memang lagi ngetik di input/textarea AKTIF
+                if (
+                    $target.is("input, textarea, [contenteditable=true]") &&
+                    !$target.prop("disabled") &&
+                    !$target.prop("readonly")
+                ) {
+                    return;
+                }
+
+                const evt = e.originalEvent || e;
+                const clipboardData = evt.clipboardData || window.clipboardData;
+                if (!clipboardData || !clipboardData.items) return;
+
+                const files = [];
+                for (let i = 0; i < clipboardData.items.length; i++) {
+                    const item = clipboardData.items[i];
+                    if (item.kind === "file" && item.type.startsWith("image/")) {
+                        const f = item.getAsFile();
+                        if (f) files.push(f);
+                    }
+                }
+
+                if (!files.length) return;
+
+                e.preventDefault();
+                activeUploadCtx.appendFiles(files);
+            });
+
+
+            // ---------------------------
+            // Upload bubble (HARVEST + localStorage, TANPA POST)
+            // ---------------------------
+            function addUploadBubble({ title, hint, onFiles, storageKey, minCount = 1 }) {
+                const bubble = addMessage("assistant", "");
+                bubble.addClass("upload-bubble");
+
+                const titleEl = $("<div></div>")
+                    .addClass("fw-semibold mt-2 mb-1")
+                    .text(title);
+
+                const hintEl = $("<div></div>")
+                    .addClass("text-muted small mb-2")
+                    .text(hint);
+
+                // Dropzone utama
+                const box = $(`
+                    <div class="file-drop-box my-3" tabindex="0">
+                        <i class="fa-solid fa-cloud-arrow-up cloud-icon"></i>
+                        <div class="hint mb-3">Tap / drop semua gambar sekaligus</div>
+
+                        <input type="file" class="uploader" multiple accept="image/*"
+                        style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;" />
+
+                        <div class="preview-grid d-none"></div>
+                    </div>
+                    `);
+
+                const input = box.find("input.uploader");
+                const preview = box.find(".preview-grid");
+
+                // Kontrol ekstra (mobile only)
+                const controls = $(`
+                    <div class="upload-controls">
+                        <button type="button"
+                        class="btn btn-sm upload-btn upload-btn-gallery pick-gallery-btn">
+                        <i class="fa-regular fa-image"></i>
+                        <span>Galeri</span>
+                        </button>
+                        <button type="button"
+                        class="btn btn-sm upload-btn upload-btn-camera camera-btn">
+                        <i class="fa-solid fa-camera"></i>
+                        <span>Kamera</span>
+                        </button>
+                        <input type="file" class="camera-input d-none"
+                        accept="image/*" capture="environment" />
+                    </div>
+                    `);
+                const cameraInput = controls.find(".camera-input");
+
+
+                const confirmWrap = $(`
+                    <div class="quick-replies upload-confirm mt-2 mb-3 d-none">
+                        <button type="button" class="btn btn-outline-primary btn-sm confirm-upload-btn">
+                        Confirm
+                        </button>
+                        <small class="remaining-hint ms-2"
+                        style="color:orange; font-size:0.8rem; display:none;"></small>
+                    </div>
+                    `);
+
+                const confirmBtn = confirmWrap.find(".confirm-upload-btn");
+                const remainingHint = confirmWrap.find(".remaining-hint");
+
+                // Staging gambar sebelum di-confirm
+                let staged = [];
+
+                function renderPreview() {
+                    preview.empty();
+
+                    if (!staged.length) {
+                        preview.addClass("d-none");
+                        confirmWrap.addClass("d-none");
+                        remainingHint.hide(); // ga ada gambar, ga usah nunjukin
+                        return;
+                    }
+
+                    preview.removeClass("d-none");
+                    confirmWrap.removeClass("d-none");
+
+                    staged.forEach((f, idx) => {
+                        preview.append(`
+                        <div class="preview-item" data-index="${idx}">
+                            <button type="button" class="preview-remove" aria-label="Hapus gambar">&times;</button>
+                            <img src="${f.data}" alt="preview">
+                        </div>
+                        `);
+                    });
+
+                    // 🔐 Atur tombol Confirm + hint “berapa lagi”
+                    if (staged.length < minCount) {
+                        const remaining = minCount - staged.length;
+
+                        confirmBtn.prop("disabled", true);
+                        confirmBtn.text(`Confirm (${staged.length}/${minCount})`);
+
+                        // kalau minCount > 1 baru masuk akal kasih hint
+                        if (minCount > 1) {
+                            remainingHint
+                                .text(`${remaining} screenshot lagi!`)
+                                .show();
+                        } else {
+                            remainingHint.hide();
+                        }
+                    } else {
+                        confirmBtn.prop("disabled", false);
+                        confirmBtn.text("Confirm");
+                        remainingHint.hide();
+                    }
+                }
+
+
+                async function appendFiles(fileList) {
+                    const files = [...fileList].filter(f => f.type.startsWith("image/"));
+                    if (!files.length) {
+                        showWarning("File harus berupa gambar.");
+                        return;
+                    }
+
+                    const newItems = await Promise.all(
+                        files.map(
+                            file =>
+                                new Promise(resolve => {
+                                    const reader = new FileReader();
+                                    reader.onload = e => {
+                                        resolve({ name: file.name, data: e.target.result });
+                                    };
+                                    reader.readAsDataURL(file);
+                                })
+                        )
+                    );
+
+                    staged = staged.concat(newItems);
+                    renderPreview();
+                }
+
+                activeUploadCtx = {
+                    appendFiles,  // refer ke fungsi di bubble ini
+                };
+
+                function confirmUpload() {
+                    if (!staged.length || staged.length < minCount) return;
+
+                    const base64Arr = staged.map(f => ({ name: f.name, data: f.data }));
+
+                    if (storageKey) {
+                        saveImagesToStorage(storageKey, base64Arr);
+                    }
+
+                    // ⬅️ MATIKAN konteks lama DULU
+                    activeUploadCtx = null;
+
+                    // lalu trigger callback (bisa bikin bubble baru yg akan set activeUploadCtx lagi)
+                    onFiles(base64Arr.map(f => f.data));
+
+                    input.prop("disabled", true).css("pointer-events", "none");
+                    if (isMobileDevice) {
+                        controls.find("button").prop("disabled", true);
+                        cameraInput.prop("disabled", true);
+                    }
+                    confirmBtn.text("Confirmed").prop("disabled", true);
+                    remainingHint.hide();
+
+                    // 🔒 Tambahan: kunci preview setelah Confirm
+                    preview.off("click", ".preview-remove");
+                    preview.find(".preview-remove").remove();
+                }
+
+
+                // === EVENTS ===
+                // keyboard
+                box.on("keydown", e => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        input[0].click();
+                    }
+                });
+
+                // file via input utama
+                input.on("change", e => {
+                    if (!e.target.files?.length) return;
+                    appendFiles(e.target.files);
+                    e.target.value = "";
+                });
+
+                // drag & drop
+                box.on("dragover", e => {
+                    e.preventDefault();
+                    e.originalEvent.dataTransfer.dropEffect = "copy";
+                    box.addClass("drag-over");
+                });
+                box.on("dragleave drop", e => {
+                    e.preventDefault();
+                    box.removeClass("drag-over");
+                });
+                box.on("drop", e => {
+                    e.preventDefault();
+                    const dt = (e.originalEvent || e).dataTransfer;
+                    if (!dt?.files?.length) return;
+                    appendFiles(dt.files);
+                });
+
+                // hapus per gambar
+                preview.on("click", ".preview-remove", function () {
+                    const idx = $(this).closest(".preview-item").data("index");
+                    staged.splice(idx, 1);
+                    renderPreview();
+                });
+
+                // Confirm
+                confirmBtn.on("click", e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    confirmUpload();
+                });
+
+                // Mobile only: Galeri / Kamera
+                if (isMobileDevice) {
+                    controls.find(".pick-gallery-btn").on("click", () => input[0].click());
+                    controls.find(".camera-btn").on("click", () => cameraInput[0].click());
+
+                    cameraInput.on("change", e => {
+                        if (!e.target.files?.length) return;
+                        appendFiles(e.target.files);
+                        e.target.value = "";
+                    });
+
+                    bubble.append(titleEl, hintEl, box, controls, confirmWrap);
+                } else {
+                    // Desktop: hanya dropzone + Confirm
+                    bubble.append(titleEl, hintEl, box, confirmWrap);
+                }
+
+                scrollToBottom();
+            }
+
+
+            // ---------------------------
+            // Analysis bubble (TABLE-BASED)
+            // ---------------------------
+            function valOrTbd(v) {
+                if (v === null || v === undefined || v === "" || (Array.isArray(v) && !v.length)) return "TBD";
+                return v;
+            }
+
+            function listToHtml(arr) {
+                if (!arr || !arr.length) return "TBD";
+                return `<ul class="mb-0 ps-3">${arr.map(x => `<li>${x}</li>`).join("")}</ul>`;
+            }
+
+            function renderEvidenceTable(title, arr) {
+                const wrap = $("<div></div>").addClass("mb-2");
+                wrap.append($("<div></div>").addClass("small fw-semibold text-muted mb-1").text(title));
+
+                if (!arr || !arr.length) {
+                    wrap.append($("<div></div>").addClass("small text-muted").text("Tidak ada data."));
+                    return wrap;
+                }
+
+                const table = $(`
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered analysis-table mb-0">
+                        <thead>
+                            <tr>
+                            <th style="width:160px">Item</th>
+                            <th style="width:120px">State</th>
+                            <th>Note</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                        </table>
+                    </div>
+                    `);
+
+                const tbody = table.find("tbody");
+                arr.forEach(x => {
+                    tbody.append(`
+                        <tr>
+                        <td><strong>${x.item}</strong></td>
+                        <td>${valOrTbd(x.state)}</td>
+                        <td>${valOrTbd(x.note)}</td>
+                        </tr>
+                    `);
+                });
+
+                wrap.append(table);
+                return wrap;
+            }
+
+            function renderPortfolioManagerBubble(pm) {
+                const bubble = addMessage("assistant", "");
+                bubble.addClass("analysis-bubble");
+
+                const summary = pm.human_readable_summary || {};
+                const tech = pm.technical_view || {};
+                const macro = pm.macro_view || {};
+                const risk = pm.risk_profile || {};
+                const decision = pm.final_decision || {};
+
+                const keyPoints = Array.isArray(summary.key_points) ? summary.key_points : [];
+
+                const keyPointsHtml = keyPoints.length
+                    ? `<ul class="mb-0 ps-3">
+              ${keyPoints.map(p => `<li>${p}</li>`).join("")}
+           </ul>`
+                    : `<p class="text-muted mb-0">No key points provided.</p>`;
+
+                // ===== isi TAB SUMMARY =====
+                const summaryHtml = `
+                    <div class="mb-2">
+                        <div class="small text-uppercase text-muted">Summary</div>
+                        <h4 class="mb-4">${valOrTbd(summary.title)}</h4>
+                        <p class="mb-2">${valOrTbd(summary.recommendation)}</p>
+                        ${keyPointsHtml}
+                    </div>
+
+                    <hr class="my-4" />
+
+                    <div class="mb-2">
+                        <div class="text-uppercase text-muted mb-2 mt-2">Decision</div>
+                        <table class="table table-sm analysis-table mb-4">
+                            <tbody>
+                                <tr>
+                                    <th>Action</th>
+                                    <td>${humanizeLabel(decision.action || "TBD")}</td>
+                                </tr>
+                                <tr>
+                                    <th>Priority</th>
+                                    <td>${humanizeLabel(decision.priority || "TBD")}</td>
+                                </tr>
+                                <tr>
+                                    <th>Time</th>
+                                    <td>${humanizeLabel(decision.time_sensitivity || "TBD")}</td>
+                                </tr>
+                                <tr>
+                                    <th>Execution</th>
+                                    <td>${valOrTbd(decision.execution_notes)}</td>
+                                </tr>
+                                <tr>
+                                    <th>Alignment</th>
+                                    <td>${valOrTbd(decision.alignment_comment)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mb-2">
+                        <div class="text-uppercase text-muted mb-2 mt-2">Technical View</div>
+                        <p class="mb-1">
+                            <strong>Trend:</strong> ${humanizeLabel(tech.trend_bias || "TBD")}
+                        </p>
+                        <p class="mb-1">
+                            <strong>Setup quality:</strong> ${tech.setup_quality_score ?? "TBD"} / 10
+                        </p>
+                        <p class="mb-1">${valOrTbd(tech.narrative)}</p>
+                    </div>
+
+                    <div class="mb-2">
+                        <div class="text-uppercase text-muted mb-2 mt-2">Macro View</div>
+                        <p class="mb-1">
+                            <strong>Macro bias:</strong> ${humanizeLabel(macro.macro_bias || "TBD")}
+                        </p>
+                        <p class="mb-1">${valOrTbd(macro.macro_risk_commentary)}</p>
+                    </div>
+
+                    <div class="mb-2">
+                        <div class="text-uppercase text-muted mb-2 mt-2">Risk</div>
+                        <table class="table table-sm analysis-table mb-4">
+                            <tbody>
+                                <tr>
+                                    <th>Thesis clarity</th>
+                                    <td>${risk.thesis_clarity ?? "TBD"} / 10</td>
+                                </tr>
+                                <tr>
+                                    <th>Probability of edge</th>
+                                    <td>${risk.probability_of_edge != null ? risk.probability_of_edge : "TBD"}</td>
+                                </tr>
+                                <tr>
+                                    <th>R:R & win rate</th>
+                                    <td>
+                                        R ≈ ${risk.rr_profile?.reward_multiple ?? "TBD"}x,
+                                        Win rate ≈ ${risk.rr_profile?.estimated_win_rate ?? "TBD"}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Kelly fraction</th>
+                                    <td>${risk.kelly_fraction != null ? risk.kelly_fraction : "TBD"}</td>
+                                </tr>
+                                <tr>
+                                    <th>Risk per trade</th>
+                                    <td>${risk.suggested_risk_per_trade_pct != null ? risk.suggested_risk_per_trade_pct + "%" : "TBD"}</td>
+                                </tr>
+                                <tr>
+                                    <th>Invalidation</th>
+                                    <td>
+                                        Level: ${risk.invalidation_level != null ? risk.invalidation_level : "TBD"}<br/>
+                                        Reason: ${valOrTbd(risk.invalidation_reason)}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Comment</th>
+                                    <td>${valOrTbd(risk.sizing_comment)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                // ===== TAB JSON =====
+                const rawJson = escapeHtml(JSON.stringify(pm, null, 2));
+
+                const html = `
+                    <div class="analysis-tabs">
+                        <ul class="nav nav-tabs mb-2" role="tablist">
+                            <li class="nav-item">
+                                <button class="nav-link active" type="button" data-tab="summary">
+                                    Summary
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" type="button" data-tab="json">
+                                    JSON
+                                </button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content pt-2">
+                            <div class="tab-pane tab-summary active">
+                                ${summaryHtml}
+                            </div>
+                            <div class="tab-pane tab-json d-none">
+                                <pre class="mb-0 small"><code>${rawJson}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                bubble.append(html);
+
+                // handler tab
+                const tabLinks = bubble.find(".analysis-tabs .nav-link");
+                const summaryPane = bubble.find(".tab-summary");
+                const jsonPane = bubble.find(".tab-json");
+
+                tabLinks.on("click", function () {
+                    const target = $(this).data("tab");
+
+                    tabLinks.removeClass("active");
+                    $(this).addClass("active");
+
+                    if (target === "summary") {
+                        summaryPane.removeClass("d-none");
+                        jsonPane.addClass("d-none");
+                    } else {
+                        summaryPane.addClass("d-none");
+                        jsonPane.removeClass("d-none");
+                    }
+                });
+
+                // 🔽 QUICK REPLIES setelah PM sukses
+                addQuickReplies(bubble, [
+                    {
+                        label: "Add to Story",
+                        onClick: () => acceptTrade(true, pm)
+                    },
+                    {
+                        label: "Reload",
+                        onClick: () => resetAll()
+                    }
+                ]);
+
+                return bubble;
+            }
+
+
+            function renderGenericAnalysisBubble(jsonObj) {
+                const bubble = addMessage("assistant", "");
+                bubble.addClass("analysis-bubble");
+
+                const prettyJson = JSON.stringify(jsonObj, null, 2);
+
+                const html = `
+                    <div class="mb-2">
+                        <div class="text-uppercase text-muted mb-2 mt-2">Raw Analyzer Output</div>
+                        <pre class="mb-0" style="font-size: 0.8rem;">${prettyJson}</pre>
+                    </div>
+                `;
+
+                bubble.append(html);
+                return bubble;
+            }
+
+            // ---------------------------
+            // Render analysis bubble (TABLE view)
+            // v1.7.0
+            // ---------------------------
+            function renderAnalysisBubble(jsonObj) {
+                // NEW: detect portfolio_manager schema (FinalPMOutputSchema)
+                if (jsonObj.role === "portfolio_manager" && jsonObj.technical_view && jsonObj.macro_view) {
+                    return renderPortfolioManagerBubble(jsonObj);
+                }
+
+                // Fallback generic renderer untuk schema lain (legacy / debugging)
+                return renderGenericAnalysisBubble(jsonObj);
+            }
+
+            // ---------------------------
+            // Steps (chat style)
+            // ---------------------------
+            function step1_pair() {
+                const b = addAssistantText("<p>Pair apa yang mau kamu analisa? Pilih salah satu:</p>");
+                addQuickReplies(b, [
+                    { label: "Gold", onClick: () => choosePair("gold") },
+                    { label: "Oil", onClick: () => choosePair("oil") },
+                    { label: "Nasdaq", onClick: () => choosePair("nasdaq") },
+                    { label: "IDX", onClick: () => choosePair("idx") },
+                    { label: "Russel", onClick: () => choosePair("russell") },
+                    { label: "S&P500", onClick: () => choosePair("sp500") },
+                    { label: "Nikkei", onClick: () => choosePair("nikkei") },
+                    { label: "DJIA", onClick: () => choosePair("djia") }
+                ]);
+            }
+
+
+            function choosePair(pair) {
+                wizardState.pair = pair;
+                addUserText(pair.toUpperCase());
+                step2_style();
+            }
+
+            function step2_style() {
+                const b = addAssistantText("<p>Trading style kamu Intraday, Swing, atau Dead Retail Zone?</p>");
+                addQuickReplies(b, [
+                    { label: "Intraday", onClick: () => chooseStyle("intraday") },
+                    { label: "Swing", onClick: () => chooseStyle("swing") },
+                    { label: "Dead Retail Zone", onClick: () => chooseStyle("dead_retail_zone") }
+                ]);
+            }
+
+
+            function chooseStyle(style) {
+                wizardState.style = style;
+                addUserText(style.toUpperCase());
+                step3_uploadCharts();
+            }
+
+            function step3_uploadCharts() {
+                const req = requiredCharts();
+                addAssistantText(
+                    `<p class="mb-2">Oke. Sekarang upload chart berikut sekaligus dalam 1 kali kirim:</p><p>• ${req.join("<br/>• ")}</p>`
+                );
+
+                addUploadBubble({
+                    title: "Upload Chart Screenshots",
+                    hint: `Wajib minimal ${req.length} gambar sesuai list di atas.`,
+                    storageKey: STORAGE_KEYS.charts,
+                    minCount: req.length,                // ⬅️ WAJIB 3 untuk swing / intraday
+                    onFiles: (imgs) => {
+                        if (imgs.length < req.length) {
+                            showWarning(`Minimal ${req.length} chart ya (${req.join(", ")})`);
+                            return;
+                        }
+                        wizardState.charts = imgs;
+                        addUserText(`✅ Charts di-upload (${imgs.length} file).`);
+                        step4_uploadMacro();
+                    }
+                });
+            }
+
+            function step4_uploadMacro() {
+                addAssistantText(
+                    `<p class="mb-2">Sekarang upload screenshot macro sekaligus (boleh lebih dari 2 file):</p><p>• VIX<br>• US10Y<br>• DXY<br>• Yield curve / macro dashboard lain</p>`
+                );
+
+                addUploadBubble({
+                    title: "Upload Macro Screenshots",
+                    hint: "Drop/tap untuk upload semua macro metrics (minimal 2 gambar).",
+                    storageKey: STORAGE_KEYS.macro,
+                    minCount: 2,                          // ⬅️ bebas: 1 / 2 / 3 sesuai mau kamu
+                    onFiles: (imgs) => {
+                        wizardState.macro = imgs;
+                        addUserText(`✅ Macro di-upload (${imgs.length} file).`);
+                        step5_confirmAndAnalyze();
+                    }
+                });
+            }
+
+
+            function step5_confirmAndAnalyze() {
+                const req = requiredCharts();
+
+                const html = `
+                    <p class="mb-2">Sebelum analisa, kita confirm dulu:</p>
+
+                    <p class="mb-1 ps-3" style="border-left: 3px solid #eee"><strong>Pair:</strong> ${wizardState.pair.toUpperCase()}</p>
+                    <p class="mb-1 ps-3" style="border-left: 3px solid #eee"><strong>Style:</strong> ${wizardState.style.toUpperCase()}</p>
+                    <p class="mb-1 ps-3" style="border-left: 3px solid #eee"><strong>Required charts:</strong> ${req.join(", ")}</p>
+                    <p class="mb-1 ps-3" style="border-left: 3px solid #eee"><strong>Charts uploaded:</strong> ${wizardState.charts.length}</p>
+                    <p class="mb-2 ps-3" style="border-left: 3px solid #eee"><strong>Macro uploaded:</strong> ${wizardState.macro.length}</p>
+
+                    <p>Klik <strong>"Analisa Sekarang"</strong> untuk generate rekomendasi (JSON).</p>
+                `;
+
+                const b = addAssistantText(html);
+
+                addQuickReplies(b, [
+                    { label: "Analisa Sekarang", onClick: () => generateJsonResponse() },
+                    { label: "Ulang Upload Charts", onClick: () => restartFromCharts() },
+                    { label: "Ulang Upload Macro", onClick: () => restartFromMacro() }
+                ]);
+            }
+
+
+
+            function restartFromCharts() {
+                addUserText("Ulang upload charts.");
+                wizardState.charts = [];
+                step3_uploadCharts();
+            }
+
+            function restartFromMacro() {
+                addUserText("Ulang upload macro.");
+                wizardState.macro = [];
+                step4_uploadMacro();
+            }
+
+            async function generateJsonResponse() {
+                // Bubble status dengan titik 3 biji berkedip
+                const loadingBubble = addUserText(
+                    '<span class="validation-text">Sedang memvalidasi kelengkapan data' +
+                    '<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>' +
+                    '</span>'
+                );
+                // 🔥 Generate traceId unik per run
+                const traceId =
+                    "fw-" +
+                    Date.now().toString(36) +
+                    "-" +
+                    Math.random().toString(36).slice(2, 8);
+                // 1. Siapkan Payload (Sama seperti sebelumnya)
+                const chartsRaw = loadImagesFromStorage(STORAGE_KEYS.charts);
+                const macroRaw = loadImagesFromStorage(STORAGE_KEYS.macro);
+                const reqCharts = requiredCharts();
+
+                const chartsPayload = chartsRaw.map((obj, idx) => ({
+                    slot: reqCharts[idx] || null,
+                    index: idx,
+                    name: obj.name || `chart_${idx + 1}.png`,
+                    data: obj.data
+                }));
+
+                const macroPayload = macroRaw.map((obj, idx) => ({
+                    index: idx,
+                    name: obj.name || `macro_${idx + 1}.png`,
+                    data: obj.data
+                }));
+
+                const analysisMode =
+                    wizardState.style === "intraday"
+                        ? "INTRADAY"
+                        : wizardState.style === "dead_retail_zone"
+                            ? "DEAD_RETAIL_ZONE"
+                            : "SWING";
+
+                const payload = {
+                    trace_id: traceId,
+                    wizard_version: "1.9.2",
+                    pair: wizardState.pair,
+                    style: wizardState.style,
+                    analysis_mode: analysisMode,
+                    screenshot_counts: { charts: chartsPayload.length, macro: macroPayload.length },
+                    screenshots: { charts: chartsPayload, macro: macroPayload }
+                };
+
+
+                let jsonObj = null;
+
+                try {
+                    const resp = await fetch(PREPROCESS_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!resp.ok) throw new Error(await resp.text());
+                    jsonObj = await resp.json();
+
+                    // ✅ kalau sukses, ubah teks loading-nya
+                    const vt = loadingBubble.find(".validation-text");
+                    if (vt.length) {
+                        vt.text("Validasi selesai.");
+                    }
+
+                } catch (err) {
+                    // ❌ kalau error, kasih info di bubble yang sama
+                    const vt = loadingBubble.find(".validation-text");
+                    if (vt.length) {
+                        vt.text("Validasi gagal: " + (err.message || String(err)));
+                    }
+
+                    addAssistantText(`❌ Error: ${err.message}`);
+                    return;
+                }
+
+                console.log("[FW] Preprocess Result:", jsonObj);
+
+                console.log("[FW] Preprocess Result:", jsonObj);
+
+                // --- LOGIC BARU SESUAI PROMPT ANDA ---
+
+                // 1. Cek jika AI bilang BELUM SIAP (ready_for_analysis: false)
+                if (jsonObj.ready_for_analysis === false) {
+                    const reason = jsonObj.reason_if_not_ready || "Data tidak lengkap.";
+                    const missing = (jsonObj.input_summary?.timeframes_missing || []).join(", ");
+
+                    const html = `
+                        <div style="color: #dc3545;"><strong class="my-2">⛔ Data Belum Lengkap</strong><p>${reason}<br>${missing ? `Missing TFs: ${missing}</p>` : ""}</div>
+                    `;
+                    const b = addAssistantText(html);
+                    addQuickReplies(b, [
+                        { label: "Upload Ulang Charts", onClick: () => restartFromCharts() }
+                    ]);
+                    return; // Stop, jangan render tabel
+                }
+
+                // 2. Cek jika AI bilang SIAP (ready_for_analysis: true)
+                if (jsonObj.ready_for_analysis === true) {
+                    wizardState.preprocessResult = jsonObj;
+
+                    // update bubble "Sedang memvalidasi..." biar nyambung
+                    const vt = loadingBubble.find(".validation-text");
+                    if (vt.length) {
+                        vt.text("Validasi sukses. Menjalankan analisa...");
+                    }
+
+                    // ⬅️ langsung lompat ke analyzer, TANPA bubble hijau / tombol lagi
+                    return runAnalyzerFromPreprocess(jsonObj, { auto: true });
+                }
+
+
+            }
+
+            async function runAnalyzerFromPreprocess(preJson, opts = {}) {
+                const auto = !!opts.auto;
+                const traceId = preJson.trace_id || `fw-${Date.now()}`;   // 🔥 carry over
+
+                if (!auto) {
+                    // dipakai kalau user klik tombol "Analisa"
+                    addUserText("Analisa sekarang...");
+                } else {
+                    // dipakai kalau auto-run sesudah validasi sukses
+                    var analysisBubble = addAssistantText(
+                        '<span class="analysis-status-text">All good! Sekarang menjalankan analisa multi-agent' +
+                        '<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>' +
+                        '</span>'
+                    );
+                }
+
+
+                // mapping sederhana dari wizardState → analyzer input
+                let assetType = "UNKNOWN";
+                let assetSymbol = "";
+
+                switch (wizardState.pair) {
+                    case "gold":
+                        assetType = "GOLD";
+                        assetSymbol = "XAUUSD";
+                        break;
+                    case "oil":
+                        assetType = "OIL";
+                        assetSymbol = "CL";       // atau "WTI", sesuaikan dengan schema analyzer kamu
+                        break;
+                    case "nasdaq":
+                        assetType = "INDEX_FUTURES";
+                        assetSymbol = "NQ";
+                        break;
+                    case "idx":
+                        assetType = "INDEX";
+                        assetSymbol = "IDX";
+                        break;
+                    case "russell":
+                        assetType = "INDEX_FUTURES";
+                        assetSymbol = "RTY";
+                        break;
+                    case "sp500":
+                        assetType = "INDEX_FUTURES";
+                        assetSymbol = "ES";
+                        break;
+                    case "nikkei":
+                        assetType = "INDEX_FUTURES";
+                        assetSymbol = "NKD";      // atau "JP225" kalau itu yang kamu pakai di backend
+                        break;
+                    case "djia":
+                        assetType = "INDEX_FUTURES";
+                        assetSymbol = "YM";
+                        break;
+                    default:
+                        assetType = "UNKNOWN";
+                        assetSymbol = "";
+                }
+
+
+                const payload = {
+                    trace_id: traceId,
+                    analysis_mode:
+                        preJson.analysis_mode ||
+                        (wizardState.style === "intraday"
+                            ? "INTRADAY"
+                            : wizardState.style === "dead_retail_zone"
+                                ? "DEAD_RETAIL_ZONE"
+                                : "SWING"),
+                    asset_type: assetType,
+                    asset_symbol: assetSymbol,
+                    charts: preJson.screenshots?.charts ?? [],
+                    macro_dashboard: preJson.gate2_macro ?? null,
+                    news_set: preJson.news ?? null,
+                    raw_meta: preJson,
+                };
+
+
+                try {
+                    const resp = await fetch(ANALYZER_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                    });
+
+                    if (!resp.ok) {
+                        const text = await resp.text();
+                        addAssistantText(
+                            `❌ Analyzer error (${resp.status}): ${text.slice(0, 200)}`
+                        );
+                        return;
+                    }
+
+                    const data = await resp.json();
+                    console.log("[FW] analyzer result:", data);
+
+                    const finalJson = data.result || data;
+
+                    renderAnalysisBubble(finalJson);
+                    enableComposer();
+                    // kalau tadi kita bikin bubble status analisa, update jadi selesai
+                    if (typeof analysisBubble !== "undefined") {
+                        const at = analysisBubble.find(".analysis-status-text");
+                        if (at.length) {
+                            at.text("Analisa multi-agent selesai.");
+                        }
+                    }
+
+                } catch (err) {
+                    addAssistantText(`❌ Gagal call analyzer: ${err.message}`);
+                }
+            }
+
+            function acceptTrade(isYes, jsonObj) {
+                wizardState.acceptedTrade = isYes;
+                addUserText(isYes ? "Ya, lakukan." : "Tidak.");
+
+                if (isYes) {
+                    console.log("SAVE TO PAIR STORY:", jsonObj);
+                    addAssistantText("✅ Oke, rencana trading disimpan ke Pair Story kamu. Semoga eksekusinya lancar!");
+                } else {
+                    addAssistantText("👍 Siap. Tidak disimpan. Kalau mau analisa ulang, refresh halaman atau mulai wizard lagi.");
+                }
+
+                const b = addAssistantText("Mau mulai analisa baru?");
+                addQuickReplies(b, [
+                    { label: "Mulai lagi", onClick: () => resetAll() }
+                ]);
+            }
+
+            function resetAll() {
+                addUserText("Mulai lagi.");
+
+                wizardState = { pair: null, style: null, charts: [], macro: [], acceptedTrade: null };
+
+                // bersihkan staging di localStorage
+                localStorage.removeItem(STORAGE_KEYS.charts);
+                localStorage.removeItem(STORAGE_KEYS.macro);
+
+                disableComposer();
+                step1_pair();
+            }
+
+
+            // ---------------------------
+            // Init chat
+            // ---------------------------
+
+            disableComposer();
+
+            // render story strip di bagian atas
+            renderTradeStories(tradeStoriesData);
+
+            // 1) FIRST BUBBLE: "Hi, Quant Trader!"
+            addAssistantText(
+                '<p class="mb-0 text-center fs-6" style="font-weight: 500;">👋 Hi, Quant Trader!</p>'
+            );
+
+            // 2) SECOND BUBBLE: CTA register/login
+            addAssistantText(
+                '<p class="mt-2">' +
+                '<a href="register.html">Daftar</a> untuk mendapatkan full access, ' +
+                'atau <a href="login.html">login</a> kalau sudah punya akun.' +
+                '</p>'
+            );
+
+            // 3) THIRD BUBBLE: sticker avatar
+            const stickerBubble = addMessage(
+                "assistant",
+                '<img src="img/avatar.png" alt="Avatar" />'
+            );
+            stickerBubble.addClass("sticker-bubble my-2");
+
+            // 4) Lanjut step wizard
+            step1_pair();
+
+
+        });
+    </script>
+</body>
+
+</html>

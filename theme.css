@@ -131,3 +131,8 @@ h1,h2,h3,h4,h5,h6{ font-weight:800; letter-spacing:-.02em; margin:0; }
 .icon-btn i {
     text-decoration: none !important;
 }
+
+/* Feature links - bold styling for feature items */
+.link-features {
+    font-weight: 700;
+}

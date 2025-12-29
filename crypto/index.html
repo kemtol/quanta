@@ -4,71 +4,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto - QQQUANTA</title>
+    <meta name="theme-color" content="#ffffff">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/theme.css?v=1.7.1">
+    <link rel="stylesheet" href="/style.css?v=1.7.1">
+
+    <title>Crypto Trading Features - QQQUANTA</title>
+    <meta name="description"
+        content="Advanced AI-powered crypto trading tools: on-chain analysis, whale tracking, and predictive analytics.">
+    <meta property="og:title" content="Crypto Trading Features - QQQUANTA">
+    <meta property="og:description" content="Advanced AI-powered crypto trading tools for professional traders.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="QQQUANTA">
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        .status-bar {
+            position: sticky;
+            top: 0;
+            z-index: 60;
+            background: #fff;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            height: 40px;
+            border-bottom: 1px solid #e5e7eb;
         }
 
-        body {
-            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
+        .status-bar .back-link {
+            color: #3b82f6;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-bar .page-title {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            color: #1f2937;
+            font-weight: 700;
+        }
+
+        .hero-bg {
+            background: linear-gradient(135deg, #f7931a 0%, #627eea 50%, #00d4aa 100%);
+            width: 100%;
+            height: 75vh;
+            position: fixed;
+            top: 40px;
+            left: 0;
+            z-index: 1;
+        }
+
+        .hero-bg .dot {
+            display: none;
         }
 
         .container {
-            text-align: center;
-            padding: 2rem;
+            max-width: 640px;
+            position: relative;
         }
 
-        h1 {
-            font-size: 2.5rem;
-            background: linear-gradient(135deg, #f59e0b, #fbbf24);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 1rem;
+        .container .dot {
+            width: 2rem;
+            height: 2rem;
+            position: absolute;
+            background: #f7931a;
+            top: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 999px;
+            z-index: 9;
         }
 
-        .icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-        }
-
-        p {
-            color: #94a3b8;
-            margin-bottom: 2rem;
-        }
-
-        .back {
-            color: #64748b;
-            text-decoration: none;
-            padding: 0.75rem 1.5rem;
-            border: 1px solid #64748b;
-            border-radius: 8px;
-            transition: all 0.2s;
-        }
-
-        .back:hover {
-            background: rgba(255, 255, 255, 0.1);
+        .content-card {
+            position: relative;
+            margin-top: 5vh;
             color: #fff;
+            z-index: 5;
+        }
+
+        .content-card h3 {
+            font-weight: 900;
+        }
+
+        .feature-item {
+            opacity: 0.6;
+        }
+
+        .divider {
+            border: 1px solid #ccc;
+            width: 100%;
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <div class="icon">₿</div>
-        <h1>Crypto</h1>
-        <p>Coming Soon - BTC, ETH, SOL Analysis Tools</p>
-        <a href="/" class="back">← Back to Home</a>
+    <nav class="status-bar">
+        <a href="/" class="back-link">
+            <i class="fa-solid fa-chevron-left"></i> QQQUANTA
+        </a>
+        <span class="page-title">Crypto</span>
+    </nav>
+
+    <div class="hero-bg">
+        <span class="dot"></span>
     </div>
+
+    <main class="container">
+        <span class="dot"></span>
+        <div class="pt-5 this-page content-card w-100 d-flex flex-column align-items-center p-4 my-4">
+
+            <h3 class="text-center mb-3 mt-4">Available Features</h3>
+
+            <div class="p-1 my-1 w-100 text-center">
+                <a href="footprint.html" class="link-features">Crypto Orderflow & Liquidation Map</a>
+                <p class="mb-1">Track whale movements, liquidation clusters, and smart money flows across major crypto
+                    exchanges.</p>
+            </div>
+
+            <div class="p-1 my-1 w-100 text-center">
+                <a href="ai-analytics.html" class="link-features">AI Crypto Analytics</a>
+                <p class="mb-1">Machine learning-powered analysis with on-chain metrics, funding rates, and sentiment
+                    signals.</p>
+            </div>
+
+            <hr class="divider my-4">
+
+            <h3>Coming Soon</h3>
+
+            <div class="p-1 my-1 w-100 text-center feature-item">
+                <a href="#" class="link-features">On-Chain Intelligence</a>
+                <p class="mb-1">Whale wallet tracking, exchange inflows/outflows, and network activity monitoring.</p>
+            </div>
+
+            <div class="p-1 my-1 w-100 text-center feature-item">
+                <a href="#" class="link-features">DeFi Yield Scanner</a>
+                <p class="mb-1">Real-time yield opportunities, TVL tracking, and protocol revenue analysis across DeFi.
+                </p>
+            </div>
+
+            <div class="p-1 my-1 w-100 text-center feature-item">
+                <a href="#" class="link-features">Crypto Alerts</a>
+                <p class="mb-1">Funding rate flips, liquidation cascades, whale movements, and price action signals.</p>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

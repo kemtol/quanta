@@ -1,0 +1,2981 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENQ Footprint Chart - QQQUANTA</title>
+    <style>
+        /* =========================
+   0) Base / Reset
+========================= */
+        :root {
+            --bg: #ffffff;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --border: #e5e7eb;
+
+            --btn: #3b82f6;
+            --btn-hover: #2563eb;
+            --btn-secondary: #e5e7eb;
+            --btn-secondary-hover: #d1d5db;
+
+            --bid: #991b1b;
+            --ask: #065f46;
+
+            --bid-b: #fee2e2;
+            --bid-low: #fef2f2;
+            --bid-med: #fee2e2;
+            --bid-high: #fecaca;
+
+            --ask-b: #d1fae5;
+            --ask-low: #ecfdf5;
+            --ask-med: #d1fae5;
+            --ask-high: #a7f3d0;
+
+            --poc-bg: yellow;
+            /* Orange Block */
+            --poc-accent: yellow;
+            /* Yellow Border */
+            --poc-text: #000000;
+
+            --vwap: red;
+
+            --stack-buy: #2563eb;
+            --stack-sell: #d946ef;
+
+            --price-col-w: 60px;
+            /* lebar sticky price column */
+            --profile-col-w: 60px;
+            /* offset sticky profile = price width */
+            --candle-min-w: 56px;
+            /* Compact column width */
+
+            --grid-col-gap: 16px;
+            /* Compact gap */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        /* =========================
+   1) Layout
+========================= */
+        #container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: relative;
+            /* for absolute children */
+        }
+
+        .meter-label {
+            position: absolute;
+            bottom: 42px;
+            /* User requested "topnya 42px" to avoid 'mepet' (too close) */
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            font-weight: 900;
+            white-space: nowrap;
+            text-shadow: 0 0 2px #fff;
+            pointer-events: none;
+            z-index: 25;
+            text-align: center;
+            line-height: 1;
+        }
+
+        #chart-wrapper {
+            flex: 1;
+            overflow: auto;
+            background: var(--bg);
+            position: relative;
+            /* Sticky context base */
+        }
+
+        /* =========================
+   2) Header / Status Bar
+========================= */
+        #status-bar {
+            position: sticky;
+            left: 0;
+            top: auto;
+            /* Allow it to scroll vertically with the page/wrapper */
+            width: 100vw;
+            /* Span full viewport width so it doesn't get cut by grid width */
+            z-index: 60;
+            /* Higher than time-header */
+            background: var(--bg);
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 40px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .status-left,
+        .status-right {
+            display: flex;
+            align-items: center;
+        }
+
+        .status-left {
+            gap: 16px;
+        }
+
+        .status-right {
+            gap: 12px;
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        .symbol-badge {
+            padding: 0 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .5px;
+            height: 21px;
+            display: flex;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .separator {
+            color: var(--border);
+        }
+
+        /* Inputs */
+        input[type="date"],
+        input[type="time"] {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid var(--border);
+            padding: 0 4px;
+            border-radius: 4px;
+            font-size: 11px;
+            height: 21px;
+            font-family: inherit;
+        }
+
+        input[type="date"]:hover,
+        input[type="time"]:hover {
+            border-color: #d1d5db;
+        }
+
+        /* Buttons */
+        button {
+            background: var(--btn);
+            color: #fff;
+            border: none;
+            padding: 0 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            height: 21px;
+            transition: background .2s;
+        }
+
+        button:hover {
+            background: var(--btn-hover);
+        }
+
+        button.secondary {
+            background: var(--btn-secondary);
+            color: #374151;
+        }
+
+        button.secondary:hover {
+            background: var(--btn-secondary-hover);
+        }
+
+        /* =========================
+   3) Grid / Columns
+========================= */
+        #chart-grid {
+            display: inline-grid;
+            column-gap: var(--grid-col-gap);
+            row-gap: 0;
+            padding: 0;
+            min-width: 100%;
+        }
+
+        /* Sticky left columns */
+        .price-label {
+            position: sticky;
+            left: 0;
+            width: var(--price-col-w);
+            padding: 4px 16px;
+            background: #fff;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 700;
+            color: #374151;
+            font-family: monospace;
+            white-space: nowrap;
+            z-index: 98;
+            opacity: .8;
+        }
+
+        .profile-column {
+            position: sticky;
+            left: var(--price-col-w);
+            /* profile harus offset = lebar price column */
+            z-index: 99;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding-right: 4px;
+            font-size: 10px;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .profile-bar {
+            position: absolute;
+            left: 0px;
+            top: 2px;
+            bottom: 2px;
+            background: blueviolet;
+            z-index: -1;
+            opacity: .5;
+        }
+
+        /* Sticky top header */
+        .time-header {
+            position: sticky;
+            top: 0;
+            /* Sticks to top of wrapper when status bar scrolls away */
+            background: var(--bg);
+            padding: 8px;
+            text-align: center;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--muted);
+            z-index: 50;
+            /* High enough to cover cells, but lower than status bar/crosshair */
+            opacity: 1;
+            /* Opaque to cover content behind */
+            /* FILL GAP to the right using box-shadow */
+            box-shadow: 48px 0 0 var(--bg);
+            /* for absolute delta labels */
+        }
+
+        /* Sticky Corner (Col 1) */
+        #grid-corner {
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            z-index: 51;
+            /* On top of others? Same level is fine */
+            box-shadow: 48px 0 0 var(--bg);
+        }
+
+        /* ===== Delta labels floating on footprint cells ===== */
+        .delta-pill {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            font-weight: 800;
+            font-family: monospace;
+            padding: 0;
+            background: transparent;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 80;
+        }
+
+        /* ✅ Pastikan delta bisa "nangkring" di atas signal meter (footer sticky) */
+        .fp-cell {
+            overflow: visible;
+        }
+
+        .fp-cell.has-delta {
+            position: relative;
+            z-index: 30;
+            /* > .signal-meter (z-index: 20) */
+        }
+
+        .delta-pill.positive {
+            color: #16a34a;
+            /* green */
+        }
+
+        .delta-pill.negative {
+            color: #dc2626;
+            /* red */
+        }
+
+        .delta-pill.top {
+            top: -40px;
+        }
+
+        .delta-pill.bottom {
+            bottom: -40px;
+        }
+
+
+
+        /* Divergence Marker (Standalone) */
+        .div-marker {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 80;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 900;
+            pointer-events: none;
+            padding-top: 2px;
+
+            /* Gap from pill */
+            /* We will position it relative to the pill via JS or CSS classes */
+        }
+
+        .div-marker.top {
+            top: 0px;
+        }
+
+        .div-marker.bottom {
+            bottom: -20px;
+        }
+
+        /* Below the bottom pill */
+
+        /* Candle column */
+        .candle-column {
+            min-width: var(--candle-min-w);
+            border-left: none;
+            border-right: none;
+        }
+
+        .candle-column:first-of-type {
+            border-left: 2px solid #fff;
+        }
+
+        /* =========================
+   4) Footprint Cell
+========================= */
+        .fp-cell {
+            height: 100%;
+            display: flex;
+            align-items: stretch;
+            position: relative;
+            /* for overlays */
+            isolation: isolate;
+        }
+
+        .bid-side,
+        .ask-side {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            /* Reduced from 11px per user request to make bars more visible */
+            font-weight: 700;
+            font-family: monospace;
+            height: 100%;
+            padding: 0;
+            border: 1px solid transparent;
+            background: var(--bg);
+            position: relative;
+            z-index: 2;
+        }
+
+        .bid-side {
+            color: var(--bid);
+        }
+
+        .ask-side {
+            color: var(--ask);
+        }
+
+        /* Volume intensity */
+        .bid-side[data-vol] {
+            border-color: var(--bid-b);
+            z-index: 2;
+        }
+
+        .bid-side[data-vol="high"] {
+            background: var(--bid-high);
+            border-color: #fca5a5;
+        }
+
+        .bid-side[data-vol="med"] {
+            background: var(--bid-med);
+            border-color: #fecaca;
+        }
+
+        .bid-side[data-vol="low"] {
+            background: var(--bid-low);
+            border-color: var(--bid-b);
+        }
+
+        /* Zero volume cells - subtle styling */
+        .bid-side.zero,
+        .ask-side.zero {
+            color: #666;
+            font-size: 8px;
+            opacity: 0.5;
+        }
+
+        .ask-side[data-vol] {
+            border-color: var(--ask-b);
+            z-index: 2;
+        }
+
+        .ask-side[data-vol="high"] {
+            background: var(--ask-high);
+            border-color: #86efac;
+        }
+
+        .ask-side[data-vol="med"] {
+            background: var(--ask-med);
+            border-color: #bbf7d0;
+        }
+
+        .ask-side[data-vol="low"] {
+            background: var(--ask-low);
+            border-color: var(--ask-b);
+        }
+
+        .bid-side::first-letter,
+        .ask-side::first-letter {
+            font-weight: 900;
+            color: #111;
+        }
+
+        .ask-side {
+            color: #065f46;
+        }
+
+        .ask-side::first-letter {
+            color: #1d4ed8;
+            /* biru utk BUY ▶ */
+        }
+
+        .bid-side {
+            color: #991b1b;
+        }
+
+        .bid-side::first-letter {
+            color: #7e22ce;
+            /* ungu utk SELL ◀ */
+        }
+
+        /* POC highlight */
+        .fp-cell.poc .bid-side,
+        .fp-cell.poc .ask-side {
+            background: var(--poc-bg) !important;
+            color: var(--poc-text) !important;
+            border-top: 2px solid var(--poc-accent);
+            border-bottom: 2px solid var(--poc-accent);
+        }
+
+        .fp-cell.poc .bid-side {
+            border-left: 2px solid var(--poc-accent);
+        }
+
+        .fp-cell.poc .ask-side {
+            border-right: 2px solid var(--poc-accent);
+        }
+
+        /* Override interior text colors if needed, but 'color: var(--poc-text) !important' above handles most. */
+
+
+        /* small boxed token inside bid/ask cell */
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            background: rgba(0, 0, 0, 0.03);
+            line-height: 1;
+        }
+
+        .tag .dir {
+            font-size: 10px;
+            font-weight: 900;
+            opacity: 0.85;
+        }
+
+        .tag .vol {
+            font-size: 11px;
+            font-weight: 800;
+            font-family: monospace;
+        }
+
+        /* optional: color hint */
+        .tag.buy {
+            border-color: rgba(37, 99, 235, .25);
+            background: rgba(37, 99, 235, .06);
+        }
+
+        .tag.sell {
+            border-color: rgba(217, 70, 239, .25);
+            background: rgba(217, 70, 239, .06);
+        }
+
+        .tag.buy .dir {
+            color: green;
+        }
+
+        /* ▲ */
+        .tag.sell .dir {
+            color: red;
+        }
+
+        /* ▼ */
+
+
+        /* =========================
+   5) Overlays / Advanced
+========================= */
+
+        /* VWAP SVG overlay */
+        #vwap-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 1;
+            overflow: visible;
+        }
+
+        #vwap-overlay path {
+            fill: none;
+            stroke: var(--vwap);
+            stroke-width: 4;
+            stroke-linecap: square;
+            stroke-linejoin: miter;
+            opacity: 0.25;
+        }
+
+        /* Imbalance text + outline */
+        .imbalance-val {
+            font-weight: 800;
+            color: #0000ff;
+            /* buy imbalance on ask */
+            text-decoration: underline;
+        }
+
+        .imbalance-val-sell {
+            font-weight: 800;
+            color: #ff00ff;
+            /* sell imbalance on bid */
+            text-decoration: underline;
+        }
+
+        .ask-side.imbalance-val {
+            outline: 2px solid var(--stack-buy);
+            outline-offset: -2px;
+        }
+
+        .bid-side.imbalance-val-sell {
+            outline: 2px solid var(--stack-sell);
+            outline-offset: -2px;
+        }
+
+        /* Imbalance arrows outside cells */
+        .imb-arrow-right {
+            position: absolute;
+            right: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #22c55e;
+            font-size: 10px;
+            font-weight: 900;
+            pointer-events: none;
+        }
+
+        .imb-arrow-left {
+            position: absolute;
+            left: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #ef4444;
+            font-size: 10px;
+            font-weight: 900;
+            pointer-events: none;
+        }
+
+        /* Stacked flags */
+        .stacked-buy {
+            border-right: 3px solid #0000ff !important;
+            background: rgba(0, 0, 255, .05);
+        }
+
+        .stacked-sell {
+            border-left: 3px solid #ff00ff !important;
+            background: rgba(255, 0, 255, .05);
+        }
+
+        /* Stack band overlay per candle (Pulsing Heatmap) */
+        .candle-stack-band {
+            position: absolute;
+            left: 0;
+            right: 0;
+            /* Full width */
+            border-radius: 99px;
+            /* Lebih bulat */
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .candle-stack-band.buy {
+            background: green;
+            /* Lebih tegas */
+            animation: pulse-stack-green-bold 1.5s infinite;
+        }
+
+        .candle-stack-band.sell {
+            background: red;
+            /* Lebih tegas */
+            animation: pulse-stack-red-bold 1.5s infinite;
+        }
+
+        @keyframes pulse-stack-green-bold {
+            0% {
+                box-shadow: 0 0 0 0px rgba(0, 255, 0, 0.8);
+            }
+
+            /* Bright Green */
+            50% {
+                box-shadow: 0 0 0 24px rgba(0, 255, 0, 0);
+            }
+
+            /* Increased to 24px */
+            100% {
+                box-shadow: 0 0 0 0px rgba(0, 255, 0, 0);
+            }
+        }
+
+        @keyframes pulse-stack-red-bold {
+            0% {
+                box-shadow: 0 0 0 0px rgba(255, 0, 0, 0.8);
+            }
+
+            /* Bright Red */
+            50% {
+                box-shadow: 0 0 0 24px rgba(255, 0, 0, 0);
+            }
+
+            /* Increased to 24px */
+            100% {
+                box-shadow: 0 0 0 0px rgba(255, 0, 0, 0);
+            }
+        }
+
+
+        /* Divergence badge */
+        .delta-div-badge {
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 4px;
+            margin-top: 2px;
+            display: inline-block;
+            font-weight: 700;
+        }
+
+        .div-bear {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #f87171;
+        }
+
+        .div-bull {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #4ade80;
+        }
+
+        /* Zoom / Gesture */
+        #chart-wrapper {
+            overscroll-behavior: none;
+            touch-action: none;
+            /* supaya pinch / pan kita handle sendiri */
+            cursor: grab;
+        }
+
+        #chart-wrapper.dragging {
+            cursor: grabbing;
+        }
+
+        /* optional: smoothing */
+        #chart-grid {
+            will-change: transform;
+        }
+
+        /* =========================
+           6) Crosshair
+        ========================= */
+        /* Sticky Bottom Signal Meter */
+        .signal-meter {
+            position: sticky;
+            bottom: 0;
+            background: var(--bg);
+            z-index: 20;
+            display: flex;
+            flex-direction: column-reverse;
+            /* Bottom up */
+            justify-content: flex-start;
+            align-items: center;
+            gap: 3px;
+            padding: 4px 2px;
+        }
+
+        .meter-bar {
+            width: 100%;
+            height: 4px;
+            background: #ddd;
+            transition: all 0.2s;
+        }
+
+        .meter-bar.active.green {
+            background: #00ff00;
+            box-shadow: 0 0 4px #00ff00;
+        }
+
+        .meter-bar.active.red {
+            background: #ff0000;
+            box-shadow: 0 0 4px #ff0000;
+        }
+
+        .crosshair-x,
+        .crosshair-y {
+            position: absolute;
+            background: #9ca3af;
+            opacity: 0.8;
+            pointer-events: none;
+            z-index: 50;
+            display: none;
+            /* hidden by default */
+        }
+
+        .crosshair-x {
+            width: 1px;
+            top: 40px;
+            /* below status bar */
+            bottom: 0;
+            border-left: 1px dashed #374151;
+            background: transparent;
+        }
+
+        .crosshair-y {
+            height: 1px;
+            left: 0;
+            right: 0;
+            border-top: 1px dashed #374151;
+            background: transparent;
+        }
+
+        .crosshair-label-y {
+            position: absolute;
+            right: 0;
+            background: #1f2937;
+            color: #fff;
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 2px;
+            pointer-events: none;
+            z-index: 51;
+            font-family: monospace;
+            display: none;
+        }
+
+        /* Last Price Marker */
+        .last-price-marker {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            border: 2px solid #3b82f6;
+            pointer-events: none;
+            z-index: 20;
+            box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Ensure Text is above marker */
+        .fp-cell .bid-side,
+        .fp-cell .ask-side {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Blue text for Last Price Cell */
+        .fp-cell.is-close .bid-side,
+        .fp-cell.is-close .ask-side {
+            color: #3b82f6 !important;
+            font-weight: 900;
+        }
+
+        /* =========================
+           7) Loading Overlay
+        ========================= */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 1;
+            transition: opacity 0.3s ease-out;
+        }
+
+        #loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .loading-subtitle {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 24px;
+        }
+
+        .progress-container {
+            width: 280px;
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 99px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #0062ff, #00ff4c);
+            border-radius: 99px;
+            transition: width 0.15s ease-out;
+        }
+
+        .progress-text {
+            margin-top: 12px;
+            font-size: 12px;
+            font-weight: 800;
+            font-family: monospace;
+            color: var(--text);
+        }
+
+        .progress-status {
+            margin-top: 8px;
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        /*  =========================
+   11) Live Price Ticker
+========================= */
+        #price-ticker {
+            position: absolute;
+            right: 0;
+            background: dodgerblue;
+            border-radius: 0;
+            padding: 2px 8px;
+            z-index: 100;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 10px;
+            display: flex !important;
+        }
+
+        #price-ticker .ticker-symbol {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        #price-ticker .ticker-price {
+            font-size: 12px;
+            font-weight: 700;
+            color: #e2e8f0;
+            transition: color 0.15s;
+            text-align: center;
+            margin-right: 4px;
+        }
+
+        #price-ticker .ticker-price.up {
+            color: #22c55e;
+        }
+
+        #price-ticker .ticker-price.down {
+            color: #ef4444;
+        }
+
+        #price-ticker .ticker-status {
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 4px;
+        }
+
+        #price-ticker .ticker-status.connected {
+            color: #22c55e;
+        }
+
+        #price-ticker .ticker-status.disconnected {
+            color: #fff;
+        }
+
+        /* Last Price Line (TradingView style) */
+        #last-price-line {
+            position: absolute;
+            left: 0;
+            height: 3px;
+            background: dodgerblue;
+            pointer-events: none;
+            z-index: 100;
+            display: none;
+            box-shadow: 0 0 8px dodgerblue;
+        }
+
+        #last-price-line::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: -4px;
+            width: 8px;
+            height: 8px;
+            background: dodgerblue;
+            border-radius: 50%;
+        }
+
+        /* Market Halt Overlay */
+        #market-halt-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 32px 48px;
+            text-align: center;
+            z-index: 100;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        #market-halt-overlay.visible {
+            display: block;
+        }
+
+        #market-halt-overlay h3 {
+            font-size: 16px;
+            color: #6b7280;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        #market-halt-overlay p {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        #market-halt-overlay .halt-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-title">Loading Chart Data</div>
+            <div class="loading-subtitle">Fetching footprint data...</div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <div class="progress-text" id="progress-text">0%</div>
+            <div class="progress-status" id="progress-status">Initializing...</div>
+        </div>
+    </div>
+
+    <div id="container">
+
+
+        <!-- Status -->
+        <!-- Status Bar & Controls -->
+
+
+        <!-- Chart -->
+        <div id="chart-wrapper">
+            <!-- Market Halt Overlay -->
+            <div id="market-halt-overlay">
+                <div class="halt-icon">⏸️</div>
+                <h3 id="halt-title">Tape reading halted</h3>
+                <p id="halt-message">Market closed for holiday</p>
+            </div>
+
+            <!-- Status Bar (Sticky Left, Scrollable Vertical) -->
+            <div id="status-bar">
+                <div class="status-left">
+                    <span class="symbol-badge">ENQ</span>
+                    <div class="control-group">
+                        <button class="secondary" onclick="loadLive()">Live</button>
+                        <label id="auto-refresh-label"
+                            style="color:var(--text); font-size:12px; margin-left:8px; display:inline-flex; align-items:center; gap:4px; opacity:0.8;">
+                            <input type="checkbox" id="auto-refresh-check" onchange="toggleAutoRefresh(this)">
+                            <span>Auto
+                                (1m)</span>
+                        </label>
+                        <span class="separator">|</span>
+                        <button class="secondary" id="calendar-btn" onclick="toggleHistoryControls()"
+                            title="Select Date"
+                            style="display: inline-flex; align-items: center; justify-content: center; padding: 0 6px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </button>
+
+                        <div id="history-controls" style="display:none; align-items:center; gap:8px;">
+                            <input type="date" id="dev-date"
+                                style="background:#f3f4f6; border:1px solid #e5e7eb; border-radius:4px; font-size:11px; height:21px; padding:0 4px; font-family: inherit;">
+                            <select id="dev-hour"
+                                style="background:#f3f4f6; color:#374151; border:1px solid #e5e7eb; border-radius:4px; font-size:11px; height:21px;">
+                            </select>
+                            <button class="secondary" onclick="loadHistory()">Load</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="status-right">
+                    <span id="status-text">Ready</span>
+                    <span class="separator">|</span>
+                    <span id="stats">Candles: 0 Vol: 0 Delta: 0</span>
+                </div>
+            </div>
+
+
+            <svg id="vwap-overlay"></svg>
+            <div id="chart-grid"></div>
+            <!-- Last Price Line (TradingView style) -->
+            <div id="last-price-line"></div>
+        </div>
+
+        <!-- Crosshair Elements -->
+        <div id="ch-x" class="crosshair-x"></div>
+        <div id="ch-y" class="crosshair-y"></div>
+        <div id="ch-lbl-y" class="crosshair-label-y"></div>
+
+        <!-- Live Price Ticker -->
+        <div id="price-ticker">
+            <div class="ticker-price" id="ticker-price">—</div>
+            <div class="ticker-status" id="ticker-status">● Connecting...</div>
+        </div>
+
+
+    </div>
+
+    <script>
+        const API_BASE = 'https://fut-state-engine.mkemalw.workers.dev/data';
+        const STREAM_WS = 'wss://fut-state-engine.mkemalw.workers.dev/stream';
+        const TICK_SIZE = 0.25; // ENQ/MNQ tick size
+        let data = [];
+        // Global state for Crosshair
+        let G_prices = [];
+        let G_livePrice = 0; // Track live price for dynamic range
+
+        // Normalize levels: support object {p,bv,av} AND array [price, bid, ask]
+        function normLevel(l) {
+            if (l && typeof l === 'object' && !Array.isArray(l)) {
+                return { p: Number(l.p), bv: Number(l.bv || 0), av: Number(l.av || 0) };
+            }
+            if (Array.isArray(l)) {
+                return { p: Number(l[0]), bv: Number(l[1] || 0), av: Number(l[2] || 0) };
+            }
+            return { p: NaN, bv: 0, av: 0 };
+        }
+
+        // =========================
+        // LIVE PRICE TICKER
+        // =========================
+        let priceWs = null;
+        let priceReconnectTimer = null;
+
+        function connectPriceStream() {
+            if (priceWs && priceWs.readyState === WebSocket.OPEN) return;
+
+            const tickerPrice = document.getElementById('ticker-price');
+            const tickerStatus = document.getElementById('ticker-status');
+
+            try {
+                priceWs = new WebSocket(STREAM_WS);
+
+                priceWs.onopen = () => {
+                    // Show ticker immediately on connect
+                    const ticker = document.getElementById('price-ticker');
+                    if (ticker) {
+                        ticker.style.display = 'block';
+                        ticker.style.top = '48px'; // safe position below status bar
+                    }
+                    tickerStatus.textContent = '● Connected';
+                    tickerStatus.className = 'ticker-status connected';
+                    console.log('[PriceTicker] Connected');
+                };
+
+                priceWs.onmessage = (event) => {
+                    try {
+                        const msg = JSON.parse(event.data);
+                        console.log('[PriceTicker] Message:', msg);
+
+                        // Always ensure ticker is visible on message
+                        const ticker = document.getElementById('price-ticker');
+                        if (ticker) ticker.style.display = 'block';
+
+                        if (msg.type === 'init' || msg.type === 'price') {
+                            const price = msg.price;
+                            if (price > 0) {
+                                tickerPrice.textContent = price.toFixed(2);
+                                tickerStatus.textContent = '● Live';
+                                tickerStatus.className = 'ticker-status connected';
+
+                                // Flash color based on direction
+                                tickerPrice.classList.remove('up', 'down');
+                                if (msg.direction === 1) {
+                                    tickerPrice.classList.add('up');
+                                } else if (msg.direction === -1) {
+                                    tickerPrice.classList.add('down');
+                                }
+
+                                // Update global live price and trigger re-render if out of range
+                                const oldLive = G_livePrice;
+                                G_livePrice = price;
+
+                                // Check if price is outside current visible range (throttled to 15s)
+                                if (G_prices.length > 0 && !window._renderThrottled) {
+                                    const minP = Math.min(...G_prices);
+                                    const maxP = Math.max(...G_prices);
+                                    if (price < minP || price > maxP) {
+                                        // Re-render to expand range (throttled)
+                                        window._renderThrottled = true;
+                                        render();
+                                        setTimeout(() => { window._renderThrottled = false; }, 15000);
+                                    }
+                                }
+
+                                // Update last price line position on chart
+                                updateLastPriceLine(price);
+                            } else {
+                                // Market closed - keep showing last price with CLOSED label
+                                tickerStatus.textContent = 'CLOSED';
+                                tickerStatus.className = 'ticker-status disconnected';
+                                tickerPrice.classList.remove('up', 'down');
+
+                                // Keep line visible at last known price if we have one
+                                if (G_livePrice > 0) {
+                                    updateLastPriceLine(G_livePrice);
+                                } else {
+                                    // No previous price, position at middle
+                                    const ticker = document.getElementById('price-ticker');
+                                    const line = document.getElementById('last-price-line');
+                                    if (line) line.style.display = 'none';
+
+                                    if (ticker && G_prices.length > 0) {
+                                        const rowHeight = 19;
+                                        const headerHeight = G_headerHeight || 52;
+                                        const midIndex = Math.floor(G_prices.length / 2);
+                                        const topOffset = headerHeight + (midIndex * rowHeight) + (rowHeight / 2);
+
+                                        ticker.style.display = 'block';
+                                        ticker.style.top = (topOffset - 10) + 'px';
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        // ignore bad message
+                    }
+                };
+
+                priceWs.onclose = () => {
+                    tickerStatus.textContent = '● Disconnected';
+                    tickerStatus.className = 'ticker-status disconnected';
+                    console.log('[PriceTicker] Disconnected, reconnecting...');
+                    scheduleReconnect();
+                };
+
+                priceWs.onerror = () => {
+                    tickerStatus.textContent = '● Error';
+                    tickerStatus.className = 'ticker-status disconnected';
+                };
+            } catch (e) {
+                console.error('[PriceTicker] Failed to connect:', e);
+                scheduleReconnect();
+            }
+        }
+
+        // Update last price horizontal line on chart
+        function updateLastPriceLine(price) {
+            const line = document.getElementById('last-price-line');
+            const ticker = document.getElementById('price-ticker');
+            const tickerPrice = document.getElementById('ticker-price');
+            const wrapper = document.getElementById('chart-wrapper');
+
+            if (!line || !ticker || !wrapper) return;
+
+            // If no data yet: show ticker status only, hide line
+            if (!data.length) {
+                ticker.style.display = 'block';
+                line.style.display = 'none';
+                return;
+            }
+
+            // Find if price is within visible range
+            const allPrices = G_prices;
+            if (!allPrices || !allPrices.length) {
+                // Don't hide during re-render - keep last position
+                return;
+            }
+
+            const minP = Math.min(...allPrices);
+            const maxP = Math.max(...allPrices);
+
+            // Calculate row index (prices are ordered high to low)
+            const rowHeight = ZOOM.rowH; // use same as render
+            const headerHeight = G_headerHeight || 34;
+
+            let priceIndex;
+
+            // Handle price outside visible range - clamp to edge
+            if (price > maxP) {
+                priceIndex = 0; // Top row
+            } else if (price < minP) {
+                priceIndex = allPrices.length - 1; // Bottom row
+            } else {
+                // Find closest price in range
+                priceIndex = allPrices.indexOf(
+                    allPrices.reduce((closest, p) =>
+                        Math.abs(p - price) < Math.abs(closest - price) ? p : closest
+                    )
+                );
+            }
+
+            if (priceIndex < 0) {
+                priceIndex = 0;
+            }
+
+            const topOffset = headerHeight + (priceIndex * rowHeight) + (rowHeight / 2);
+
+            // Position the horizontal line spanning full chart grid width
+            const gridEl = document.getElementById('chart-grid');
+            const gridWidth = gridEl ? gridEl.scrollWidth : wrapper.scrollWidth;
+            line.style.display = 'block';
+            line.style.top = topOffset + 'px';
+            line.style.left = '0';
+            line.style.width = gridWidth + 'px';
+
+            // Position the ticker at the same Y-level on the right edge
+            ticker.style.display = 'block';
+            ticker.style.top = (topOffset - 10) + 'px'; // Vertically center the ticker
+            tickerPrice.textContent = price.toFixed(2);
+        }
+
+        function scheduleReconnect() {
+            if (priceReconnectTimer) return;
+            priceReconnectTimer = setTimeout(() => {
+                priceReconnectTimer = null;
+                connectPriceStream();
+            }, 3000);
+        }
+
+        // Start price stream on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(connectPriceStream, 1000);
+        });
+        let G_headerHeight = 0; // calculated in render
+        let G_colOffset = 0;    // calculated in render (px width of left headers)
+
+        // =========================
+        // LOADING PROGRESS HELPERS
+        // =========================
+        function showLoader() {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.classList.remove('hidden');
+                updateProgress(0, 'Initializing...');
+            }
+        }
+
+        function hideLoader() {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function updateProgress(percent, status) {
+            const bar = document.getElementById('progress-bar');
+            const text = document.getElementById('progress-text');
+            const statusEl = document.getElementById('progress-status');
+
+            if (bar) bar.style.width = `${percent}%`;
+            if (text) text.textContent = `${Math.round(percent)}%`;
+            if (statusEl && status) statusEl.textContent = status;
+        }
+
+
+        function init() {
+            // Populate hours 00-23
+            const hSel = document.getElementById('dev-hour');
+            if (hSel) {
+                for (let i = 0; i < 24; i++) {
+                    const val = String(i).padStart(2, '0');
+                    const opt = document.createElement('option');
+                    opt.value = val;
+                    opt.textContent = val + ':00';
+                    hSel.appendChild(opt);
+                }
+            }
+
+            // Check URL Params
+            const params = new URLSearchParams(window.location.search);
+            const pDate = params.get('date'); // Expecting YYYYMMDD
+            const pHour = params.get('hour'); // Expecting HH00 or similar
+
+            if (pDate && pHour) {
+                // Convert YYYYMMDD -> YYYY/MM/DD
+                // Assuming strict 8 digit
+                let fmtDate = pDate;
+                if (pDate.length === 8 && !pDate.includes('-') && !pDate.includes('/')) {
+                    fmtDate = `${pDate.slice(0, 4)}-${pDate.slice(4, 6)}-${pDate.slice(6, 8)}`;
+                }
+
+                // Hour: if 4 digits (0800), take first 2. If 2, take as is.
+                let fmtHour = pHour;
+                if (pHour.length === 4) fmtHour = pHour.slice(0, 2);
+
+                const dateInput = document.getElementById('dev-date');
+                if (dateInput) dateInput.value = fmtDate;
+                const hSel = document.getElementById('dev-hour');
+                if (hSel) hSel.value = fmtHour;
+
+                // Show controls if specific date requested
+                toggleHistoryControls();
+
+                setTimeout(loadHistory, 100); // defer slightly
+            } else {
+                // Default to now (UTC)
+                const now = new Date();
+                const y = now.getUTCFullYear();
+                const m = String(now.getUTCMonth() + 1).padStart(2, '0');
+                const d = String(now.getUTCDate()).padStart(2, '0');
+                const h = String(now.getUTCHours()).padStart(2, '0');
+
+                const dateInput = document.getElementById('dev-date');
+                if (dateInput) dateInput.value = `${y}-${m}-${d}`;
+                const hSel = document.getElementById('dev-hour');
+                if (hSel) hSel.value = h;
+
+                // Open controls if we are in history mode (optional, but good for UX if params exist)
+                // But here we are in 'else' block (no params), so keep hidden.
+                // However, if we HAD params (the if block), we might want to open them.
+
+                loadLive();
+            }
+        }
+
+        function toggleHistoryControls() {
+            const controls = document.getElementById('history-controls');
+            const btn = document.getElementById('calendar-btn');
+            if (controls.style.display === 'none') {
+                controls.style.display = 'flex';
+                // btn.style.background = 'var(--btn-hover)'; // optional active state
+            } else {
+                controls.style.display = 'none';
+                // btn.style.background = '';
+            }
+        }
+
+        const AGGREGATOR_API_BASE = 'https://fut-taping-agregator.mkemalw.workers.dev';
+        let liveAbortController = null;
+        let autoRefreshInterval = null;
+        let lastActivityTime = Date.now();
+        const IDLE_TIMEOUT_MS = 180000; // 3 minutes
+
+        // Activity Listeners
+        let refreshCountdown = 60;
+
+        function updateActivity() {
+            const wasIdle = (Date.now() - lastActivityTime) > IDLE_TIMEOUT_MS;
+            // --- Advanced Analysis Logic ---
+            lastActivityTime = Date.now();
+
+            // Resume if we were idle and auto-refresh is on
+            if (wasIdle && document.getElementById('auto-refresh-check').checked) {
+                console.log('User active: Resuming Auto-Refresh');
+                refreshCountdown = 1; // Trigger almost immediately
+            }
+        }
+        window.addEventListener('mousemove', updateActivity);
+        window.addEventListener('keydown', updateActivity);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && document.getElementById('auto-refresh-check').checked) {
+                // Determine if we need to reload (e.g. was hidden for > 1 min)
+                // For simplicity: Force reload on wake if active
+                console.log('Tab visible: Triggering Auto-Refresh');
+                updateActivity(); // update timestamp
+                refreshCountdown = 1; // Trigger almost immediately
+            }
+        });
+
+        function toggleAutoRefresh(el) {
+            const label = document.getElementById('auto-refresh-label');
+            const labelSpan = label.querySelector('span');
+            if (el.checked) {
+                // Start Interval
+                refreshCountdown = 60;
+                if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+
+                autoRefreshInterval = setInterval(() => {
+                    const now = Date.now();
+                    const isIdle = (now - lastActivityTime) > IDLE_TIMEOUT_MS;
+                    const isHidden = document.hidden;
+
+                    if (isHidden || isIdle) {
+                        labelSpan.textContent = isHidden ? 'Auto (Hidden)' : 'Auto (Idle)';
+                        label.style.opacity = '0.5';
+                        return;
+                    }
+
+                    label.style.opacity = '1';
+                    refreshCountdown--;
+                    labelSpan.textContent = `Auto (${refreshCountdown}s)`;
+
+                    if (refreshCountdown <= 0) {
+                        console.log('Auto-Refresh Triggered');
+                        loadLive();
+                        refreshCountdown = 60;
+                    }
+                }, 1000);
+
+                setStatus('Auto-Refresh ON');
+            } else {
+                if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+                labelSpan.textContent = 'Auto (1m)';
+                label.style.opacity = '1';
+                setStatus('Auto-Refresh OFF');
+            }
+        }
+        function fmtPrice(p) {
+            // tampil 2 desimal tapi buang .00 / trailing 0
+            return p.toFixed(2).replace(/\.?0+$/, '');
+        }
+        async function loadLive() {
+            if (liveAbortController) {
+                liveAbortController.abort();
+            }
+            liveAbortController = new AbortController();
+            const signal = liveAbortController.signal;
+
+            // Show loading overlay
+            showLoader();
+            updateProgress(5, 'Starting...');
+
+            // Clear URL
+            if (window.location.search) {
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.delete('date');
+                newUrl.searchParams.delete('hour');
+                window.history.pushState({}, '', newUrl);
+            }
+
+            // Re-enable auto-refresh checkbox if disabled
+            const autoCheck = document.getElementById('auto-refresh-check');
+            if (autoCheck) autoCheck.disabled = false;
+
+            setStatus('Loading live data...');
+            data = [];
+
+            try {
+                const now = new Date();
+                const y = now.getUTCFullYear();
+                const m = String(now.getUTCMonth() + 1).padStart(2, '0');
+                const d = String(now.getUTCDate()).padStart(2, '0');
+
+                // 1. Fetch Daily Summary for Seed (0-20%)
+                updateProgress(10, 'Fetching daily summary...');
+                let seedVol = 0;
+                let seedVal = 0;
+                try {
+                    // Fetch from Aggregator
+                    const dailyUrl = `${AGGREGATOR_API_BASE}/daily/${y}/${m}/${d}`;
+                    const res = await fetch(dailyUrl, { signal });
+                    if (res.ok) {
+                        const json = await res.json();
+                        if (json.vol && json.turnover) {
+                            seedVol = json.vol;
+                            seedVal = json.turnover;
+                            console.log('Daily Seed:', seedVol, seedVal);
+                        }
+                    }
+                } catch (e) {
+                    if (e.name === 'AbortError') throw e; // Propagate abort
+                    console.warn('Failed to fetch daily summary:', e);
+                }
+                updateProgress(25, 'Daily summary loaded');
+
+                // 2. Fetch Candles - Minimum 60 candles by loading from previous hours if needed
+                const MIN_CANDLES = 60;
+                data = [];
+                updateProgress(30, 'Fetching footprint data...');
+
+                console.log('[loadLive] Reference time:', now.toISOString());
+                console.log('[loadLive] Current UTC Hour:', now.getUTCHours());
+
+                // Start with current hour and go back until we have 60 candles OR hit an empty hour (market gap)
+                let hoursBack = 0;
+                const maxHoursBack = 6; // Don't go back more than 6 hours
+
+                while (data.length < MIN_CANDLES && hoursBack <= maxHoursBack) {
+                    const targetDate = new Date(now.getTime() - hoursBack * 60 * 60 * 1000);
+                    const ty = targetDate.getUTCFullYear();
+                    const tm = String(targetDate.getUTCMonth() + 1).padStart(2, '0');
+                    const td = String(targetDate.getUTCDate()).padStart(2, '0');
+                    const th = String(targetDate.getUTCHours()).padStart(2, '0');
+
+                    try {
+                        const prevLen = data.length;
+                        await loadHourDataSilent(ty, tm, td, th, signal);
+                        const loaded = data.length - prevLen;
+                        console.log(`[loadLive] Hour ${th}: loaded ${loaded} candles (total: ${data.length})`);
+
+                        // Stop if this hour was empty (market gap) - only after first hour
+                        if (hoursBack > 0 && loaded === 0) {
+                            console.log('[loadLive] Hit empty hour (market gap), stopping');
+                            break;
+                        }
+                    } catch (e) {
+                        if (e.name === 'AbortError') throw e;
+                        console.warn(`Hour ${th} load failed`, e);
+                        // Also stop on error (likely no data)
+                        if (hoursBack > 0) break;
+                    }
+                    hoursBack++;
+                }
+
+                console.log(`[loadLive] Final: Loaded ${data.length} candles from ${hoursBack} hour(s)`);
+                updateProgress(70, `Loaded ${data.length} candles`);
+
+                // 3. Calculate Session VWAP (Cumulative) (70-85%)
+                updateProgress(75, 'Calculating VWAP...');
+                // Note: We assume the daily summary includes data BEFORE the loaded granular data.
+                // A more robust check might be needed if summary is essentially "end of yesterday".
+                // But based on user request, this file is the "source" for the day.
+                let cumVol = seedVol;
+                let cumVal = seedVal;
+
+                data.sort((a, b) => Date.parse(a.t0) - Date.parse(b.t0)); // Ensure sorted time
+
+                // Optimized Loop
+                for (const c of data) {
+                    // Approximate candle turnover if not present (poc * vol is rough, better: sum(p*v))
+                    // Ideally candle should have turnover. If not, we estimate.
+                    let candleTurnover = 0;
+                    if (c.levels && c.levels.length > 0) {
+                        for (const lv of c.levels) {
+                            const l = normLevel(lv);
+                            if (!Number.isFinite(l.p)) continue;
+                            candleTurnover += l.p * (l.bv + l.av);
+                        }
+                    } else {
+                        candleTurnover = c.ohlc.c * c.vol; // fallback
+                    }
+
+                    // Preserve backend candle VWAP before calculating session VWAP
+                    c.vwap_candle = c.vwap;
+                    cumVol += c.vol;
+                    cumVal += candleTurnover;
+                    c.vwap_session = cumVol > 0 ? cumVal / cumVol : 0;
+                }
+                updateProgress(85, 'VWAP calculated');
+
+                // Keep only last 60 candles
+                if (data.length > 60) {
+                    data = data.slice(-60);
+                }
+
+                if (data.length > 0) {
+                    updateProgress(90, 'Processing analysis...');
+                    processData(); // Run Analysis
+                    updateProgress(95, 'Rendering chart...');
+                    render(true);
+                    updateStats();
+                    updateProgress(100, 'Complete!');
+                    setStatus('Streaming');
+                } else {
+                    updateProgress(100, 'No data');
+                    setStatus('No data available');
+                }
+            } catch (e) {
+                console.error("LoadLive Failed", e);
+                setStatus("Error: " + e.message);
+                updateProgress(100, 'Error occurred');
+            }
+
+            // Hide loader after short delay for smooth transition
+            setTimeout(hideLoader, 300);
+        }
+
+
+
+        async function loadHistory() {
+            // Turn off auto-refresh if on
+            const autoCheck = document.getElementById('auto-refresh-check');
+            if (autoCheck) {
+                if (autoCheck.checked) autoCheck.click();
+                autoCheck.disabled = true;
+            }
+
+            if (liveAbortController) {
+                liveAbortController.abort();
+            }
+            liveAbortController = new AbortController();
+            const signal = liveAbortController.signal;
+
+            const dateStr = document.getElementById('dev-date').value;
+            const hourStr = document.getElementById('dev-hour').value;
+
+            if (!dateStr || !hourStr) return alert("Please select date & hour");
+
+            // Show loading overlay
+            showLoader();
+            updateProgress(5, 'Starting...');
+
+            const [y, m, d] = dateStr.replace(/\//g, '-').split('-');
+
+            // Push URL state: date=YYYYMMDD&hour=HH00
+            const urlDate = `${y}${m}${d}`;
+            const urlHour = `${hourStr}00`;
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('date', urlDate);
+            newUrl.searchParams.set('hour', urlHour);
+            window.history.pushState({}, '', newUrl);
+
+            setStatus(`Loading Dev... ${y}/${m}/${d} ${hourStr}:00 UTC`);
+            data = []; // clear
+            render(); // clear view
+
+            try {
+                updateProgress(20, 'Fetching footprint data...');
+                await loadHourDataSilent(y, m, d, hourStr, signal);
+                updateProgress(60, `Loaded ${data.length} candles`);
+
+                // Recalc partial VWAP (no daily seed for dev mode)
+                updateProgress(70, 'Calculating VWAP...');
+                let cumVol = 0;
+                let cumVal = 0;
+                data.sort((a, b) => Date.parse(a.t0) - Date.parse(b.t0));
+
+                for (const c of data) {
+                    let candleTurnover = 0;
+                    if (c.levels && c.levels.length > 0) {
+                        for (const lv of c.levels) {
+                            const l = normLevel(lv);
+                            if (!Number.isFinite(l.p)) continue;
+                            candleTurnover += l.p * (l.bv + l.av);
+                        }
+                    } else {
+                        candleTurnover = c.ohlc.c * c.vol;
+                    }
+                    // Preserve backend candle VWAP before calculating session VWAP
+                    c.vwap_candle = c.vwap;
+                    cumVol += c.vol;
+                    cumVal += candleTurnover;
+                    c.vwap_session = cumVol > 0 ? cumVal / cumVol : 0;
+                }
+                updateProgress(85, 'VWAP calculated');
+
+                if (data.length > 0) {
+                    hideMarketHalt();
+                    updateProgress(90, 'Processing analysis...');
+                    processData();
+                    updateProgress(95, 'Rendering chart...');
+                    render(true);
+                    updateStats();
+                    updateProgress(100, 'Complete!');
+                    setStatus('History Loaded');
+                } else {
+                    updateProgress(100, 'No data');
+                    setStatus('No data for this hour');
+                    showMarketHalt('Tape reading halted', 'No trading data for this hour. Market may be closed.');
+                }
+            } catch (e) {
+                if (e.name !== 'AbortError') {
+                    console.error(e);
+                    setStatus("Error: " + e.message);
+                    updateProgress(100, 'Error occurred');
+                }
+            }
+
+            // Hide loader after short delay for smooth transition
+            setTimeout(hideLoader, 300);
+        }
+
+
+        async function loadHourDataSilent(y, m, d, h, signal) {
+            const url = `${API_BASE}/${y}/${m}/${d}/${h}`;
+            const response = await fetch(url, { signal });
+
+            if (!response.ok) throw new Error('Data not found');
+
+            const text = await response.text();
+            const lines = text.split('\n').filter(line => line.trim());
+
+            // Parse with error handling per line to avoid one bad line breaking all
+            const hourData = [];
+            let parseErrors = 0;
+            for (const line of lines) {
+                try {
+                    hourData.push(JSON.parse(line));
+                } catch (e) {
+                    parseErrors++;
+                    console.warn('Bad JSON line:', line.slice(0, 50));
+                }
+            }
+            if (parseErrors > 0) console.warn(`Skipped ${parseErrors} bad lines`);
+
+            data.push(...hourData);
+        }
+
+        // =========================
+        // ZOOM / GESTURE STATE
+        // =========================
+        const ZOOM = {
+            colW: 64,         // Reduced to 64
+            rowH: 18,         // row height
+            colGap: 48,       // Increased to 48
+            minColW: 40,      // Allow tighter zoom (was 48)
+            maxColW: 220,
+            minRowH: 12,
+            maxRowH: 40,
+            minGap: 10,
+            maxGap: 80,
+        };
+
+        function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+        function getWrapper() { return document.getElementById('chart-wrapper'); }
+        function getGrid() { return document.getElementById('chart-grid'); }
+
+        // keep zoom centered on cursor (or midpoint)
+        function zoomAround(wrapper, newColW, newRowH, anchorX, anchorY) {
+            const oldColW = ZOOM.colW, oldRowH = ZOOM.rowH;
+
+            newColW = clamp(newColW, ZOOM.minColW, ZOOM.maxColW);
+            newRowH = clamp(newRowH, ZOOM.minRowH, ZOOM.maxRowH);
+
+            const ratioX = newColW / oldColW;
+            const ratioY = newRowH / oldRowH;
+
+            // anchor point in scroll-space
+            const x = wrapper.scrollLeft + anchorX;
+            const y = wrapper.scrollTop + anchorY;
+
+            ZOOM.colW = newColW;
+            ZOOM.rowH = newRowH;
+
+            // re-render using new dimensions (keeps DOM in sync)
+            render(false);
+
+            // re-center scroll so anchor stays under cursor
+            wrapper.scrollLeft = x * ratioX - anchorX;
+            wrapper.scrollTop = y * ratioY - anchorY;
+        }
+
+        // apply gap too (optional)
+        function setGap(newGap) {
+            ZOOM.colGap = clamp(newGap, ZOOM.minGap, ZOOM.maxGap);
+            const grid = getGrid();
+            grid.style.columnGap = `${ZOOM.colGap}px`;
+        }
+
+        function render(scrollToEnd = false) {
+            const grid = document.getElementById('chart-grid');
+
+            if (data.length === 0) {
+                grid.innerHTML = '';
+                return;
+            }
+
+            // --- 1) Build price universe + profile ---
+            const priceSet = new Set();
+            const priceVol = new Map();
+            let maxProfileVol = 0;
+
+            data.forEach(candle => {
+                if (!candle.rows) return;
+                candle.rows.forEach(row => {
+                    const p = row.p;
+                    priceSet.add(p);
+                    const vol = (priceVol.get(p) || 0) + row.bv + row.av;
+                    priceVol.set(p, vol);
+                    maxProfileVol = Math.max(maxProfileVol, vol);
+                });
+            });
+
+            let prices = Array.from(priceSet).sort((a, b) => b - a);
+
+            // integer ladder (display) - dynamic range based on footprint high/low + offset
+            if (prices.length > 0 && data.length > 0) {
+                // Get actual high/low from all footprint data
+                const footprintHigh = Math.max(...prices);
+                const footprintLow = Math.min(...prices);
+
+                const PAD_TICKS = 20; // 20 ticks = 5 points for ES/NQ (tick 0.25)
+                const PAD_INT = Math.ceil(PAD_TICKS * TICK_SIZE); // => 5 for tick=0.25
+
+                let maxRender = footprintHigh + PAD_INT;
+                let minRender = footprintLow - PAD_INT;
+
+                // Also expand range if live price is outside the padded range
+                if (G_livePrice > 0) {
+                    const livePriceInt = Math.round(G_livePrice);
+                    if (livePriceInt > maxRender) {
+                        maxRender = livePriceInt + 5; // Small buffer for live price
+                    }
+                    if (livePriceInt < minRender) {
+                        minRender = livePriceInt - 5;
+                    }
+                }
+
+                const ladder = [];
+                for (let p = maxRender; p >= minRender; p -= 1) ladder.push(p);
+                prices = ladder;
+            }
+            G_prices = prices; // Expose for crosshair
+
+            // price -> gridRow idx
+            const priceToRowIdx = new Map();
+            prices.forEach((p, i) => priceToRowIdx.set(p, i + 2)); // row 1 header
+
+            // --- 2) Grid layout ---
+            const extraCols = 3;
+            const ROW_H = ZOOM.rowH;
+
+            grid.style.columnGap = `${ZOOM.colGap}px`;
+            // Sync CSS variable so .vwap-line (calc based) matches the actual grid gap
+            document.documentElement.style.setProperty('--grid-col-gap', `${ZOOM.colGap}px`);
+
+            grid.style.gridTemplateColumns =
+                `var(--price-col-w) var(--profile-col-w) repeat(${data.length + extraCols}, ${ZOOM.colW}px)`;
+
+            // Add Footer Row for Signal Meter (40px)
+            grid.style.gridTemplateRows = `auto repeat(${prices.length}, ${ROW_H}px) 40px`;
+
+
+            // --- 3) DOM management ---
+            const touchedIds = new Set();
+
+            const getEl = (id, tag, cls) => {
+                let el = document.getElementById(id);
+                if (!el) {
+                    el = document.createElement(tag);
+                    el.id = id;
+                    if (cls) el.className = cls;
+                    grid.appendChild(el);
+                } else if (cls && el.className !== cls) {
+                    el.className = cls;
+                }
+                touchedIds.add(id);
+                return el;
+            };
+
+            // ==== STACK BAND OVERLAY HELPERS (NEW) ====
+            const spawnBand = (candle, cIdx, side, high, low) => {
+                const hi = Math.max(high, low);
+                const lo = Math.min(high, low);
+
+                const topRow = priceToRowIdx.get(hi);
+                const botRow = priceToRowIdx.get(lo);
+                if (!topRow || !botRow) return;
+
+                const id = `band-${side}-${candle.t0}-${hi}-${lo}`;
+
+                // anchor: cell pada harga hi
+                const anchorCellId = `cell-${candle.t0}-${hi}`;
+                const anchor = document.getElementById(anchorCellId);
+                if (!anchor) return;
+
+                let band = document.getElementById(id);
+                if (!band) {
+                    band = document.createElement('div');
+                    band.id = id;
+                    band.className = `candle-stack-band ${side}`;
+                    anchor.appendChild(band);
+                } else {
+                    band.className = `candle-stack-band ${side}`;
+                }
+
+                const rows = Math.abs(botRow - topRow) + 1;
+                band.style.top = '0px';
+                band.style.height = `${rows * ROW_H}px`;
+
+                touchedIds.add(id); // biar ga kehapus di cleanup
+            };
+
+            // 3.0 Corner (Price Header)
+            const corner = getEl('grid-corner', 'div', '');
+            corner.style.gridColumn = '1';
+            corner.style.gridRow = '1';
+
+            // 3.0b Corner (Profile Header)
+            const cornerProf = getEl('grid-corner-prof', 'div', 'time-header');
+            cornerProf.style.gridColumn = '2';
+            cornerProf.style.gridRow = '1';
+            cornerProf.textContent = 'Vol';
+
+            // 3.1 Time Headers
+            data.forEach((candle, idx) => {
+                const colIdx = idx + 3;
+                const id = `header-${candle.t0}`;
+                const el = getEl(id, 'div', 'time-header' + (idx > 0 ? ' candle-column' : ''));
+
+                el.style.gridRow = '1';
+                el.style.gridColumn = `${colIdx}`;
+
+                const time = new Date(candle.t0);
+                let html = time.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+
+                // Divergence removed from header (moved to delta pill)
+
+                if (candle.signal && candle.signal.score !== 0) {
+                    // Signal score removed from header 
+                }
+
+                el.innerHTML = html;
+            });
+
+            // Offset Headers
+            for (let i = 0; i < extraCols; i++) {
+                const id = `header-offset-${i}`;
+                const el = getEl(id, 'div', 'time-header candle-column');
+                el.style.gridRow = '1';
+                el.style.gridColumn = `${data.length + 3 + i}`;
+                el.textContent = '';
+            }
+
+            // Measure header height AFTER headers exist
+            G_headerHeight =
+                document.getElementById('grid-corner-prof')?.offsetHeight ||
+                grid.querySelector('.time-header')?.offsetHeight ||
+                34;
+
+            // 3.2 Price & Profile Labels
+            prices.forEach((price, pIdx) => {
+                const rowIdx = pIdx + 2;
+
+                const idPrice = `price-${price}`;
+                const elPrice = getEl(idPrice, 'div', 'price-label');
+                elPrice.style.gridColumn = '1';
+                elPrice.style.gridRow = `${rowIdx}`;
+
+                const SHOW_LABEL_EVERY = 1.0;
+                const show = Math.abs((price / SHOW_LABEL_EVERY) - Math.round(price / SHOW_LABEL_EVERY)) < 1e-9;
+                elPrice.textContent = show ? fmtPrice(price) : '';
+
+                const idProf = `prof-${price}`;
+                const elProf = getEl(idProf, 'div', 'profile-column');
+                elProf.style.gridColumn = '2';
+                elProf.style.gridRow = `${rowIdx}`;
+                elProf.style.paddingLeft = '5px'; // use padding, not left (sticky uses left)
+
+                const vol = priceVol.get(price) || 0;
+                elProf.textContent = vol.toLocaleString();
+
+                let bar = elProf.querySelector('.profile-bar');
+                if (!bar) {
+                    bar = document.createElement('div');
+                    bar.className = 'profile-bar';
+                    elProf.appendChild(bar);
+                }
+                const widthPct = maxProfileVol > 0 ? (vol / maxProfileVol) * 100 : 0;
+                bar.style.width = `${widthPct}%`;
+            });
+
+            // 3.3 Cells
+            prices.forEach((clusterPrice, pIdx) => {
+                const rowIdx = pIdx + 2;
+
+                data.forEach((candle, cIdx) => {
+                    const colIdx = cIdx + 3;
+                    const id = `cell-${candle.t0}-${clusterPrice}`;
+
+                    // Use precomputed rowMap for O(1) lookup instead of O(n) find()
+                    const row = candle.rowMap?.get(clusterPrice) ?? null;
+                    const bv = row ? row.bv : 0;
+                    const av = row ? row.av : 0;
+
+                    // Use round for consistent bucket (matches toInt in processData)
+                    const pocI = Math.round(candle.poc);
+                    const vwapI = candle.vwap_session ? Math.round(candle.vwap_session) : null;
+                    // Close price (last price)
+                    const closeI = candle.ohlc ? Math.round(candle.ohlc.c) : null;
+
+                    const isPOC = (pocI === clusterPrice);
+                    const isVWAP = (vwapI !== null && vwapI === clusterPrice);
+                    const isClose = (closeI !== null && closeI === clusterPrice);
+
+                    // NOTE: stacked per-cell dimatiin (band overlay yang handle)
+                    let cellCls = 'fp-cell' + (cIdx > 0 ? ' candle-column' : '') + (isPOC ? ' poc' : '') + (isClose ? ' is-close' : '');
+
+                    const cell = getEl(id, 'div', cellCls);
+                    cell.style.gridRow = `${rowIdx}`;
+                    cell.style.gridColumn = `${colIdx}`;
+
+                    cell.querySelectorAll('.last-price-marker').forEach(x => x.remove());
+
+                    // Cleanup arrows biar ga numpuk tiap render
+                    cell.querySelectorAll('.imb-arrow-left, .imb-arrow-right').forEach(n => n.remove());
+
+
+
+                    if (isClose) {
+                        const marker = document.createElement('div');
+                        marker.className = 'last-price-marker';
+                        cell.appendChild(marker);
+                    }
+
+                    let bidEl = cell.querySelector('.bid-side');
+                    let askEl = cell.querySelector('.ask-side');
+
+                    if (!bidEl) {
+                        bidEl = document.createElement('div');
+                        bidEl.className = 'bid-side';
+                        cell.appendChild(bidEl);
+                    }
+                    if (!askEl) {
+                        askEl = document.createElement('div');
+                        askEl.className = 'ask-side';
+                        cell.appendChild(askEl);
+                    }
+
+                    // Use cached maxDispVol instead of recalculating per cell
+                    const candleMaxVol = candle.maxDispVol || 1;
+
+                    // Check if this price is within candle's range (between high and low)
+                    const candleHi = candle.ohlc ? Math.ceil(candle.ohlc.h) : null;
+                    const candleLo = candle.ohlc ? Math.floor(candle.ohlc.l) : null;
+                    const isWithinCandleRange = (candleHi !== null && candleLo !== null)
+                        && (clusterPrice <= candleHi && clusterPrice >= candleLo);
+
+                    // Bid (SELL side)
+                    if (bv > 0) {
+                        const isSell = (row?.hasSellImb === true);
+                        bidEl.textContent = bv;
+
+                        // Sell imbalance arrow - absolute left outside
+                        if (isSell) {
+                            const arrow = document.createElement('span');
+                            arrow.className = 'imb-arrow-left';
+                            arrow.textContent = '▼';
+                            cell.appendChild(arrow);
+                        }
+
+                        const ratio = bv / candleMaxVol;
+                        bidEl.dataset.vol = ratio > 0.6 ? 'high' : ratio > 0.3 ? 'med' : 'low';
+                        bidEl.className = 'bid-side';
+                    } else if (isWithinCandleRange) {
+                        // Only show 0 if within candle's price range
+                        bidEl.textContent = '0';
+                        delete bidEl.dataset.vol;
+                        bidEl.className = 'bid-side zero';
+                    } else {
+                        // Outside candle range - show nothing
+                        bidEl.textContent = '';
+                        bidEl.innerHTML = '';
+                        delete bidEl.dataset.vol;
+                        bidEl.className = 'bid-side';
+                    }
+
+                    // Ask
+                    if (av > 0) {
+                        const isBuy = (row?.hasBuyImb === true);
+                        askEl.textContent = av;
+
+                        // Buy imbalance arrow - absolute right outside
+                        if (isBuy) {
+                            const arrow = document.createElement('span');
+                            arrow.className = 'imb-arrow-right';
+                            arrow.textContent = '▲';
+                            cell.appendChild(arrow);
+                        }
+
+                        const ratio = av / candleMaxVol;
+                        askEl.dataset.vol = ratio > 0.6 ? 'high' : ratio > 0.3 ? 'med' : 'low';
+                        askEl.className = 'ask-side';
+                    } else if (isWithinCandleRange) {
+                        // Only show 0 if within candle's price range
+                        askEl.textContent = '0';
+                        delete askEl.dataset.vol;
+                        askEl.className = 'ask-side zero';
+                    } else {
+                        // Outside candle range - show nothing
+                        askEl.textContent = '';
+                        askEl.innerHTML = '';
+                        delete askEl.dataset.vol;
+                        askEl.className = 'ask-side';
+                    }
+
+
+                });
+
+
+
+
+
+
+
+                // Offset Cells
+                for (let i = 0; i < extraCols; i++) {
+                    const id = `cell-offset-${i}-${clusterPrice}`;
+                    const el = getEl(id, 'div', 'fp-cell candle-column');
+                    el.style.gridRow = `${rowIdx}`;
+                    el.style.gridColumn = `${data.length + 3 + i}`;
+
+                    if (!el.hasChildNodes()) {
+                        const b = document.createElement('div'); b.className = 'bid-side';
+                        const a = document.createElement('div'); a.className = 'ask-side';
+                        el.appendChild(b); el.appendChild(a);
+                    }
+                }
+            }); // End price loop
+
+            // --- 4) Signal Meter Footer ---
+            const footerRowIdx = prices.length + 2;
+            data.forEach((candle, idx) => {
+                const colIdx = idx + 3;
+                const id = `sig-meter-${candle.t0}`;
+                const el = getEl(id, 'div', 'signal-meter' + (idx > 0 ? ' candle-column' : ''));
+
+                el.style.gridRow = `${footerRowIdx}`;
+                el.style.gridColumn = `${colIdx}`;
+
+                const maxScore = 4; // Max bars
+                const score = candle.signal ? candle.signal.score : 0;
+                const absScore = Math.abs(score);
+                const isGreen = score > 0;
+
+                let html = '';
+                for (let i = 1; i <= maxScore; i++) {
+                    const isActive = i <= absScore;
+                    const colorCls = isGreen ? 'green' : 'red';
+                    const activeCls = isActive ? `active ${colorCls}` : '';
+                    html += `<div class="meter-bar ${activeCls}"></div>`;
+                }
+
+                // Add Labels based on tags
+                if (candle.signal && candle.signal.tags) {
+                    const tags = candle.signal.tags;
+                    let labelY = 42; // Start bottom offset (px)
+
+                    // 1. Divergence (Top priority)
+                    if (tags.includes('DIV_BEAR')) {
+                        html += `<div class="meter-label" style="color:#dc2626; bottom:${labelY}px;">BUYER<br>STALLED!</div>`;
+                        labelY += 10;
+                    } else if (tags.includes('DIV_BULL')) {
+                        html += `<div class="meter-label" style="color:#16a34a; bottom:${labelY}px;">SELLER<br>STALLED!</div>`;
+                        labelY += 10;
+                    }
+
+                    // 2. Stacked Imbalance
+                    if (tags.includes('STACK_BUY')) {
+                        html += `<div class="meter-label" style="color:#16a34a; bottom:${labelY}px;">STACK IMBALANCE!</div>`;
+                    } else if (tags.includes('STACK_SELL')) {
+                        html += `<div class="meter-label" style="color:#dc2626; bottom:${labelY}px;">STACK IMBALANCE!</div>`;
+                    }
+                }
+
+                el.innerHTML = html;
+            });
+
+            // ==== DRAW STACK BANDS ====
+            // Clear all bands once (more efficient than querySelectorAll per candle)
+            document.querySelectorAll('.candle-stack-band').forEach(el => el.remove());
+
+            data.forEach((candle, cIdx) => {
+                if (!candle.stacked) return;
+
+                for (const s of (candle.stacked.buy || [])) {
+                    spawnBand(candle, cIdx, 'buy', s.high, s.low);
+                }
+                for (const s of (candle.stacked.sell || [])) {
+                    spawnBand(candle, cIdx, 'sell', s.high, s.low);
+                }
+            });
+
+            // ==== DELTA OVERLAY (floating on candle's top/bottom cells) ====
+
+            // ✅ bersihin semua delta/marker lama dulu (biar gak numpuk / stale)
+            document.querySelectorAll('.delta-pill, .div-marker').forEach(el => el.remove());
+            document.querySelectorAll('.fp-cell.has-delta').forEach(el => el.classList.remove('has-delta'));
+
+            data.forEach((candle, idx) => {
+                if (!candle.deltaLabel || !candle.rows || candle.rows.length === 0) return;
+
+                const { side, delta, tag } = candle.deltaLabel;
+                const sign = delta >= 0 ? '+' : '';
+                //const txt = `Δ${sign}${delta.toLocaleString()}`;
+                const txt = `Δ${sign}${delta.toLocaleString()}`;
+
+                const candlePrices = candle.rows.map(r => Math.round(r.p)).sort((a, b) => b - a);
+                const topPrice = candlePrices[0];
+                const botPrice = candlePrices[candlePrices.length - 1];
+
+                const anchorPrice = (side === 'SELL') ? topPrice : botPrice;
+                const anchorCellId = `cell-${candle.t0}-${anchorPrice}`;
+                let anchorCell = document.getElementById(anchorCellId);
+
+                if (!anchorCell) {
+                    const fallbackPrice = (side === 'SELL') ? botPrice : topPrice;
+                    anchorCell = document.getElementById(`cell-${candle.t0}-${fallbackPrice}`);
+                }
+                if (!anchorCell) return;
+
+                // ✅ tandain cell ini supaya z-index naik (biar tembus footer)
+                anchorCell.classList.add('has-delta');
+
+                // Create pill
+                const pill = document.createElement('div');
+                const posClass = side === 'SELL' ? 'top' : 'bottom';
+                const colorClass = delta >= 0 ? 'positive' : 'negative';
+                pill.className = `delta-pill ${posClass} ${colorClass}`;
+                pill.innerHTML = tag ? `${txt}<span class=pill-tag>${tag}</span>` : txt;
+                anchorCell.appendChild(pill);
+
+                if (candle.deltaDiv) {
+                    const isBear = candle.deltaDiv === 'BEAR';
+                    const divEl = document.createElement('div');
+
+                    if (isBear) {
+                        // BEAR divergence: delta is negative (top), arrow 25px above delta
+                        divEl.className = `div-marker top`;
+                        divEl.style.top = '-85px'; // -40px (delta) - 25px offset
+                        divEl.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center; font-size:16px; line-height:1;">
+                            <span style="color:#16a34a; opacity:0.6;">⇡</span>
+                            <span style="color:#dc2626; font-weight:900;font-size:20px;">↓</span>
+                        </div>`;
+                    } else {
+                        // BULL divergence: delta is positive (bottom), arrow 25px below delta
+                        divEl.className = `div-marker bottom`;
+                        divEl.style.bottom = '-85px'; // -40px (delta) - 25px offset
+                        divEl.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center; font-size:16px; line-height:1;">
+                            <span style="color:#16a34a; font-weight:900;font-size:20px;">↑</span>
+                            <span style="color:#dc2626; opacity:0.6;">⇣</span>
+                        </div>`;
+                    }
+
+                    anchorCell.appendChild(divEl);
+                }
+            });
+
+            // ==== VWAP SVG OVERLAY (Stepped Line) ====
+            const svgOverlay = document.getElementById('vwap-overlay');
+            const gridRect = grid.getBoundingClientRect();
+            const wrapperRect = document.getElementById('chart-wrapper').getBoundingClientRect();
+
+            // Size SVG to match grid content size
+            svgOverlay.setAttribute('width', grid.scrollWidth);
+            svgOverlay.setAttribute('height', grid.scrollHeight);
+            svgOverlay.style.width = `${grid.scrollWidth}px`;
+            svgOverlay.style.height = `${grid.scrollHeight}px`;
+
+            // Calculate offsets from DOM (avoid magic numbers that drift with CSS changes)
+            const headerEl = grid.querySelector('.time-header');
+            const priceEl = grid.querySelector('.price-label');
+            const profileEl = grid.querySelector('.profile-column');
+            const HEADER_H = headerEl?.offsetHeight || 34;
+            const LEFT_COLS_W = (priceEl?.offsetWidth || 60) + (profileEl?.offsetWidth || 60);
+            const COL_W = ZOOM.colW;
+            const GAP = ZOOM.colGap;
+
+            // Build SVG path
+            let pathD = '';
+            let lastX = null, lastY = null;
+
+            for (let i = 0; i < data.length; i++) {
+                const candle = data[i];
+                const vwapVal = candle.vwap_session || candle.vwap;
+                if (!vwapVal) continue;
+
+                const vwapP = Math.floor(vwapVal);
+                const rowIdx = priceToRowIdx.get(vwapP);
+                if (rowIdx === undefined) continue;
+
+                // Calculate X: center of this candle's column
+                // Column index = i + 3 (after price and profile columns which are 1 and 2)
+                // But we also need to account for: left columns width + (column index - 3) * (colW + gap) + gap/2 + colW/2
+                const colOffset = i; // 0-indexed candle
+                const x1 = LEFT_COLS_W + (colOffset * (COL_W + GAP)); // left edge of column
+                const x2 = x1 + COL_W; // right edge of column
+                const xMid = x1 + COL_W / 2;
+
+                // Calculate Y: center of this price row
+                // Row index is 2-based (row 1 is header), so actual row = rowIdx - 1 (but header is row 1)
+                const priceRowIndex = rowIdx - 2; // 0-indexed price row
+                const y = HEADER_H + (priceRowIndex * ROW_H) + (ROW_H / 2);
+
+                if (lastX === null) {
+                    // First point: start path
+                    pathD = `M ${x1} ${y}`;
+                    pathD += ` L ${x2} ${y}`;
+                } else {
+                    // Draw horizontal to end of gap, then vertical, then horizontal across cell
+                    const gapMidX = lastX + GAP / 2; // lastX is end of previous cell
+
+                    // Extend previous horizontal into gap (to midpoint)
+                    pathD += ` L ${gapMidX} ${lastY}`;
+
+                    // Vertical line to current level
+                    pathD += ` L ${gapMidX} ${y}`;
+
+                    // Horizontal from gap midpoint to end of current cell
+                    pathD += ` L ${x2} ${y}`;
+                }
+
+                lastX = x2;
+                lastY = y;
+            }
+
+            svgOverlay.innerHTML = pathD ? `<path d="${pathD}"/>` : '';
+
+            // --- 4) Cleanup ---
+            const allChildren = Array.from(grid.children);
+            allChildren.forEach(child => {
+                if (child.id && !touchedIds.has(child.id)) {
+                    grid.removeChild(child);
+                }
+            });
+
+            // Auto-scroll
+            if (scrollToEnd) {
+                setTimeout(() => {
+                    const wrapper = document.getElementById('chart-wrapper');
+
+                    // 1. Horizontal Scroll (Right-align)
+                    wrapper.scrollLeft = wrapper.scrollWidth;
+
+                    // 2. Vertical Scroll (Center on Avg Price of last 10)
+                    if (data.length > 0) {
+                        const recent = data.slice(-10);
+                        let sumC = 0;
+                        let validC = 0;
+                        for (const c of recent) {
+                            if (c.ohlc && c.ohlc.c) { sumC += c.ohlc.c; validC++; }
+                        }
+
+                        if (validC > 0 && G_prices.length > 0) {
+                            const avgP = sumC / validC;
+                            // Find row index for avgP
+                            // G_prices is sorted High to Low. Find first price <= avgP
+                            let idx = G_prices.findIndex(p => p <= avgP);
+                            if (idx === -1) idx = G_prices.length - 1; // if lower than all, go bottom
+
+                            // Row height logic
+                            const rowH = ZOOM.rowH;
+                            const headerH = G_headerHeight || 34; // use measured header height
+                            const targetY = (idx * rowH) + headerH;
+
+                            // Center it
+                            wrapper.scrollTop = targetY - (wrapper.clientHeight / 2);
+                        }
+                    }
+
+                }, 100);
+            } else {
+                // Regular auto-scroll stickiness if near right
+                setTimeout(() => {
+                    const wrapper = document.getElementById('chart-wrapper');
+                    const isNearRight = (wrapper.scrollWidth - wrapper.scrollLeft - wrapper.clientWidth) < 200;
+                    if (isNearRight || data.length < 5) wrapper.scrollLeft = wrapper.scrollWidth;
+                }, 100);
+            }
+
+            // After render completes, update live price line position
+            if (G_livePrice > 0) {
+                updateLastPriceLine(G_livePrice);
+            }
+        }
+
+
+        function updateStats() {
+            const totalVol = data.reduce((sum, c) => sum + c.vol, 0);
+            const totalDelta = data.reduce((sum, c) => sum + c.delta, 0);
+            document.getElementById('stats').textContent =
+                `Candles: ${data.length} | Volume: ${totalVol.toLocaleString()} | Delta: Δ ${totalDelta > 0 ? '+' : ''}${totalDelta.toLocaleString()}`;
+        }
+
+        function setStatus(message) {
+            document.getElementById('status-text').textContent = message;
+        }
+
+        function showMarketHalt(title, message) {
+            const overlay = document.getElementById('market-halt-overlay');
+            document.getElementById('halt-title').textContent = title || 'Tape reading halted';
+            document.getElementById('halt-message').textContent = message || 'No trading data available';
+            overlay.classList.add('visible');
+        }
+
+        function hideMarketHalt() {
+            const overlay = document.getElementById('market-halt-overlay');
+            overlay.classList.remove('visible');
+        }
+
+
+        window.addEventListener('DOMContentLoaded', init);
+        // --- Advanced Analysis Logic ---
+        // =========================
+        // MOUSE + TOUCH GESTURES
+        // =========================
+        (function setupGestures() {
+            const wrapper = getWrapper();
+
+            // --- Mouse wheel zoom ---
+            wrapper.addEventListener('wheel', (e) => {
+                // TradingView-ish:
+                // - Ctrl/Meta + wheel: zoom both axes
+                // - Shift + wheel: zoom horizontal only
+                // - Alt + wheel: zoom vertical only
+                const isZoom = e.ctrlKey || e.metaKey || e.shiftKey || e.altKey;
+                if (!isZoom) return; // normal scroll
+
+                e.preventDefault();
+
+                const rect = wrapper.getBoundingClientRect();
+                const ax = e.clientX - rect.left;
+                const ay = e.clientY - rect.top;
+
+                // wheel up => zoom in
+                const dir = e.deltaY > 0 ? 0.92 : 1.08;
+
+                let newCol = ZOOM.colW;
+                let newRow = ZOOM.rowH;
+
+                if (e.altKey && !e.ctrlKey && !e.metaKey) {
+                    newRow = ZOOM.rowH * dir;
+                } else if (e.shiftKey && !e.ctrlKey && !e.metaKey) {
+                    newCol = ZOOM.colW * dir;
+                    // optional: gap ikut
+                    setGap(ZOOM.colGap * (e.deltaY > 0 ? 0.95 : 1.05));
+                } else {
+                    // ctrl/meta or default zoom mode
+                    newCol = ZOOM.colW * dir;
+                    newRow = ZOOM.rowH * dir;
+                    setGap(ZOOM.colGap * (e.deltaY > 0 ? 0.95 : 1.05));
+                }
+
+                zoomAround(wrapper, newCol, newRow, ax, ay);
+            }, { passive: false });
+
+            // --- Drag to pan (mouse) ---
+            let isDragging = false;
+            let startX = 0, startY = 0, startSL = 0, startST = 0;
+
+            wrapper.addEventListener('mousedown', (e) => {
+                // left click only
+                if (e.button !== 0) return;
+                isDragging = true;
+                wrapper.classList.add('dragging');
+                startX = e.clientX;
+                startY = e.clientY;
+                startSL = wrapper.scrollLeft;
+                startST = wrapper.scrollTop;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                wrapper.scrollLeft = startSL - dx;
+                wrapper.scrollTop = startST - dy;
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+                wrapper.classList.remove('dragging');
+            });
+
+            // --- Touch: 1-finger pan, 2-finger pinch zoom ---
+            let touchMode = null; // 'pan' | 'pinch'
+            let tStart = null;
+
+            function dist(a, b) {
+                const dx = a.clientX - b.clientX;
+                const dy = a.clientY - b.clientY;
+                return Math.hypot(dx, dy);
+            }
+            function mid(a, b) {
+                return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
+            }
+
+            wrapper.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    touchMode = 'pan';
+                    const t = e.touches[0];
+                    tStart = {
+                        x: t.clientX, y: t.clientY,
+                        sl: wrapper.scrollLeft, st: wrapper.scrollTop
+                    };
+                } else if (e.touches.length === 2) {
+                    touchMode = 'pinch';
+                    const a = e.touches[0], b = e.touches[1];
+                    const m = mid(a, b);
+                    const rect = wrapper.getBoundingClientRect();
+                    tStart = {
+                        d: dist(a, b),
+                        colW: ZOOM.colW,
+                        rowH: ZOOM.rowH,
+                        gap: ZOOM.colGap,
+                        ax: m.x - rect.left,
+                        ay: m.y - rect.top
+                    };
+                }
+            }, { passive: true });
+
+            wrapper.addEventListener('touchmove', (e) => {
+                if (!touchMode || !tStart) return;
+
+                if (touchMode === 'pan' && e.touches.length === 1) {
+                    e.preventDefault();
+                    const t = e.touches[0];
+                    const dx = t.clientX - tStart.x;
+                    const dy = t.clientY - tStart.y;
+                    wrapper.scrollLeft = tStart.sl - dx;
+                    wrapper.scrollTop = tStart.st - dy;
+                }
+
+                if (touchMode === 'pinch' && e.touches.length === 2) {
+                    e.preventDefault();
+                    const a = e.touches[0], b = e.touches[1];
+                    const dNow = dist(a, b);
+                    const scale = dNow / Math.max(1, tStart.d);
+
+                    // pinch scales both axes (TV-ish). tweak if you want only X zoom
+                    const newCol = tStart.colW * scale;
+                    const newRow = tStart.rowH * scale;
+                    setGap(tStart.gap * (0.7 + 0.3 * scale)); // softer
+
+                    zoomAround(wrapper, newCol, newRow, tStart.ax, tStart.ay);
+                }
+            }, { passive: false });
+
+            wrapper.addEventListener('touchend', () => {
+                touchMode = null;
+                tStart = null;
+            }, { passive: true });
+
+
+            // --- Crosshair Logic ---
+            const chX = document.getElementById('ch-x');
+            const chY = document.getElementById('ch-y');
+            const chLblY = document.getElementById('ch-lbl-y');
+            const statusBar = document.getElementById('status-bar');
+
+            wrapper.addEventListener('mousemove', (e) => {
+                if (isDragging) return; // don't show when panning
+
+                const rect = wrapper.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                // Position within viewport (fixed relative to container)
+                // Wrapper relative to document/body? No, wrapper is in flex container.
+                // We placed CH elements in #container (relative parent).
+                // So coordinates should be e.clientX, e.clientY relative to container top-left.
+                // Container starts at 0,0 anyway usually.
+
+                chX.style.display = 'block';
+                chY.style.display = 'block';
+                chLblY.style.display = 'block';
+
+                // Update physical position
+                chX.style.left = e.clientX + 'px';
+                chY.style.top = e.clientY + 'px';
+                chLblY.style.top = (e.clientY - 10) + 'px'; // center align label
+
+                // Calculate Price from Y
+                // Formula: GridY = scrollTop + e.clientY - statusBarHeight
+                // RowIndex = (GridY - HeaderHeight) / RowH + 2
+                // Price = G_prices[RowIndex - 2]
+
+                // Get header height (metric). Usually ~60px (time header).
+                // Let's measure dynamically if possible, or assume based on DOM
+                // Grid Row 1 height is variable (auto).
+                // Better way: Inverse map from elementFromPoint? No, slow.
+
+                // Approximation:
+                // Grid starts at top of wrapper content.
+                // scrollTop is how much we scrolled down.
+                // mouseY relative to wrapper CONTENT = e.clientY - wrapperRect.top + wrapper.scrollTop
+                const relY = y + wrapper.scrollTop;
+
+                // Row 1 is header. Let's assume header is ~30px or measure it.
+                // We'll use a heuristic or query the first row height once.
+                const headerH = G_headerHeight || 34; // use measured header height
+
+                if (relY > headerH && G_prices.length > 0) {
+                    const rowH = ZOOM.rowH || 18;
+                    const rawRowIdx = (relY - headerH) / rowH;
+                    const idx = Math.floor(rawRowIdx);
+
+                    if (idx >= 0 && idx < G_prices.length) {
+                        const price = G_prices[idx];
+                        chLblY.textContent = price.toFixed(2);
+                        // Optional: Highlight matching X candle?
+                    } else {
+                        chLblY.textContent = '';
+                    }
+                } else {
+                    chLblY.textContent = '';
+                }
+
+            });
+
+            wrapper.addEventListener('mouseleave', () => {
+                chX.style.display = 'none';
+                chY.style.display = 'none';
+                chLblY.style.display = 'none';
+            });
+
+        })();
+
+        function processData() {
+            const IMB_RATIO_TH = 3.0;     // >=300%
+            const MIN_ABS_VOL = 6;        // minimum volume biar ga noise
+            const MIN_OPPOSITE_VOL = 3;   // minimum opposing side volume to avoid false positive
+            const STACK_LEN = 3;          // stacked imbalance minimal beruntun
+            const DIV_LOOKBACK = 3;
+            const DELTA_RATIO_TH = 0.25;
+            const MIN_CANDLE_VOL = 100;
+
+            const toTick = (p) => Math.round(p / TICK_SIZE) * TICK_SIZE;
+            // Use round for consistent bucket (avoid bias from floor)
+            const toInt = (p) => Math.round(p);
+
+            data.forEach((c, idx) => {
+                // =========================
+                // A) BUILD CONTINUOUS TICK LADDER (0.25)
+                // Fill gaps with 0 for correct diagonal imbalance
+                // =========================
+                const tickMap = new Map(); // tickPrice -> {p,bv,av}
+                for (const lv of (c.levels || [])) {
+                    const l = normLevel(lv);
+                    if (!Number.isFinite(l.p)) continue;
+                    const p = toTick(l.p);
+                    if (!tickMap.has(p)) tickMap.set(p, { p, bv: 0, av: 0 });
+                    const r = tickMap.get(p);
+                    r.bv += l.bv;
+                    r.av += l.av;
+                }
+
+                // Generate continuous ladder from hi to lo
+                if (tickMap.size > 0) {
+                    const prices = Array.from(tickMap.keys());
+                    const hi = Math.max(...prices);
+                    const lo = Math.min(...prices);
+
+                    const ladder = [];
+                    for (let p = hi; p >= lo - 0.001; p -= TICK_SIZE) {
+                        const tick = toTick(p); // snap to avoid float errors
+                        const existing = tickMap.get(tick);
+                        ladder.push({
+                            p: tick,
+                            bv: existing?.bv ?? 0,
+                            av: existing?.av ?? 0
+                        });
+                    }
+                    c.tickRows = ladder;
+                } else {
+                    c.tickRows = [];
+                }
+
+                // =========================
+                // B) DIAGONAL IMBALANCE on TICK ROWS (serong)
+                // Buy imb: ask at price p vs bid at price p - tick
+                // Sell imb: bid at price p vs ask at price p + tick
+                // =========================
+                for (let i = 0; i < c.tickRows.length; i++) {
+                    const row = c.tickRows[i];
+                    row.imbalance = null;
+                    row.imbalanceRatio = null;
+
+                    // BUY imbalance: current ask vs below bid (i+1)
+                    if (i < c.tickRows.length - 1) {
+                        const currAsk = row.av;
+                        const belowBid = c.tickRows[i + 1].bv;
+                        const ratio = currAsk / Math.max(1, belowBid);
+                        if (ratio >= IMB_RATIO_TH && currAsk >= MIN_ABS_VOL && belowBid >= MIN_OPPOSITE_VOL) {
+                            row.imbalance = 'BUY';
+                            row.imbalanceRatio = ratio;
+                        }
+                    }
+
+                    // SELL imbalance: current bid vs above ask (i-1)
+                    if (i > 0) {
+                        const currBid = row.bv;
+                        const aboveAsk = c.tickRows[i - 1].av;
+                        const ratio = currBid / Math.max(1, aboveAsk);
+                        if (ratio >= IMB_RATIO_TH && currBid >= MIN_ABS_VOL && aboveAsk >= MIN_OPPOSITE_VOL) {
+                            // kalau sudah BUY, biarkan BUY menang (atau override sesuai preferensi)
+                            if (!row.imbalance) {
+                                row.imbalance = 'SELL';
+                                row.imbalanceRatio = ratio;
+                            }
+                        }
+                    }
+                }
+
+                // =========================
+                // C) STACKED IMBALANCE on TICK ROWS
+                // Beruntun pada ladder tick (adjacent)
+                // =========================
+                c.stackedTick = { buy: [], sell: [] };
+
+                const pushStack = (type, startIdx, count) => {
+                    if (count < STACK_LEN) return;
+                    const p1 = c.tickRows[startIdx].p;
+                    const p2 = c.tickRows[startIdx + count - 1].p;
+                    const high = Math.max(p1, p2);
+                    const low = Math.min(p1, p2);
+                    c.stackedTick[type].push({ high, low, count });
+                };
+
+                // BUY stacks
+                {
+                    let start = -1, cnt = 0;
+                    for (let i = 0; i < c.tickRows.length; i++) {
+                        if (c.tickRows[i].imbalance === 'BUY') {
+                            if (start === -1) start = i;
+                            cnt++;
+                        } else {
+                            if (start !== -1) pushStack('buy', start, cnt);
+                            start = -1; cnt = 0;
+                        }
+                    }
+                    if (start !== -1) pushStack('buy', start, cnt);
+                }
+
+                // SELL stacks
+                {
+                    let start = -1, cnt = 0;
+                    for (let i = 0; i < c.tickRows.length; i++) {
+                        if (c.tickRows[i].imbalance === 'SELL') {
+                            if (start === -1) start = i;
+                            cnt++;
+                        } else {
+                            if (start !== -1) pushStack('sell', start, cnt);
+                            start = -1; cnt = 0;
+                        }
+                    }
+                    if (start !== -1) pushStack('sell', start, cnt);
+                }
+
+                // =========================
+                // D) PROJECT to DISPLAY ROWS (INTEGER)
+                // - Aggregate volumes to integer bucket
+                // - Carry imbalance flags into bucket:
+                //   if any tick in bucket has BUY -> bucket has BUY (same for SELL)
+                // - Carry stacked ranges projected to integer ranges
+                // =========================
+                const dispMap = new Map(); // intPrice -> {p,bv,av, hasBuyImb, hasSellImb}
+                for (const tr of c.tickRows) {
+                    const ip = toInt(tr.p);
+                    if (!dispMap.has(ip)) dispMap.set(ip, { p: ip, bv: 0, av: 0, hasBuyImb: false, hasSellImb: false });
+                    const dr = dispMap.get(ip);
+
+                    dr.bv += tr.bv;
+                    dr.av += tr.av;
+
+                    if (tr.imbalance === 'BUY') dr.hasBuyImb = true;
+                    if (tr.imbalance === 'SELL') dr.hasSellImb = true;
+                }
+
+                c.rows = Array.from(dispMap.values()).sort((a, b) => b.p - a.p);
+
+                // Generate continuous INTEGER ladder (fill gaps with 0)
+                if (c.rows.length > 0) {
+                    const hiInt = c.rows[0].p;       // highest (sorted desc)
+                    const loInt = c.rows[c.rows.length - 1].p;  // lowest
+
+                    const continuousRows = [];
+                    for (let p = hiInt; p >= loInt; p -= 1) {
+                        const existing = dispMap.get(p);
+                        if (existing) {
+                            continuousRows.push(existing);
+                        } else {
+                            continuousRows.push({
+                                p: p,
+                                bv: 0,
+                                av: 0,
+                                hasBuyImb: false,
+                                hasSellImb: false
+                            });
+                        }
+                    }
+                    c.rows = continuousRows;
+                }
+
+                // Performance: precompute rowMap for O(1) lookup in render
+                c.rowMap = new Map(c.rows.map(r => [r.p, r]));
+
+                // Performance: cache max display volume for intensity calculation
+                c.maxDispVol = Math.max(...c.rows.map(r => r.bv + r.av), 1);
+
+                // stacked projected ranges
+                c.stacked = { buy: [], sell: [] };
+                const projStackRanges = (arr, side) => {
+                    for (const s of arr) {
+                        const highI = toInt(s.high);
+                        const lowI = toInt(s.low);
+                        c.stacked[side].push({ high: Math.max(highI, lowI), low: Math.min(highI, lowI), count: s.count });
+                    }
+                };
+                projStackRanges(c.stackedTick.buy, 'buy');
+                projStackRanges(c.stackedTick.sell, 'sell');
+
+                // =========================
+                // E) Candle metrics & delta (pakai tickRows biar akurat)
+                // =========================
+                let totalVol = 0;
+                let delta = 0;
+                for (const r of c.tickRows) {
+                    totalVol += r.bv + r.av;
+                    delta += r.av - r.bv;
+                }
+                c.totalVol = totalVol;
+                c.vol = totalVol; // Overwrite server vol with calculated vol for consistency
+                c.delta = delta;
+
+                // =========================
+                // F) DELTA LABEL (ACC vs ABS) — MVP
+                // =========================
+                const o = c.ohlc?.o ?? c.ohlc?.open ?? 0;
+                const cl = c.ohlc?.c ?? c.ohlc?.close ?? 0;
+
+                const body = Math.abs(cl - o);
+                const BODY_MIN = 0.25; // 1 tick (bisa 0.5 kalau mau lebih ketat)
+
+                // Always show delta, but tag (ABS/ACC) only if dominant
+                const side = (c.delta >= 0) ? 'BUY' : 'SELL';
+                let tag = null;
+
+                // Only compute ABS/ACC if delta is dominant
+                if (c.totalVol >= MIN_CANDLE_VOL) {
+                    const deltaRatio2 = Math.abs(c.delta) / Math.max(1, c.totalVol);
+
+                    if (deltaRatio2 >= DELTA_RATIO_TH && body >= BODY_MIN) {
+                        // kontra arah candle?
+                        // BUY dominance tapi candle turun => absorption buy
+                        // SELL dominance tapi candle naik => absorption sell
+                        if (side === 'BUY' && cl < o) tag = 'ABS';
+                        else if (side === 'SELL' && cl > o) tag = 'ABS';
+                        else tag = 'ACC';
+                    }
+                }
+
+                c.deltaLabel = {
+                    side,              // 'BUY' | 'SELL'
+                    delta: c.delta,    // number
+                    tag               // 'ABS' | 'ACC' | null
+                };
+
+                // Delta signal (optional)
+                c.deltaSignal = null;
+                const deltaRatio = Math.abs(delta) / Math.max(1, totalVol);
+                if (totalVol >= MIN_CANDLE_VOL && deltaRatio >= DELTA_RATIO_TH) {
+                    c.deltaSignal = delta > 0 ? 'BUY' : 'SELL';
+                }
+
+                // Delta divergence (optional, pakai ohlc yang kamu punya)
+                c.deltaDiv = null;
+                if (idx >= DIV_LOOKBACK && c.ohlc?.h != null && c.ohlc?.l != null) {
+                    const prevCandles = data.slice(idx - DIV_LOOKBACK, idx);
+                    // Guard: filter candles with valid OHLC to avoid NaN
+                    const validCandles = prevCandles.filter(x => x?.ohlc?.h != null && x?.ohlc?.l != null);
+                    if (validCandles.length >= Math.floor(DIV_LOOKBACK / 2)) {
+                        const lookbackHigh = Math.max(...validCandles.map(x => x.ohlc.h));
+                        const lookbackLow = Math.min(...validCandles.map(x => x.ohlc.l));
+
+                        if (c.ohlc.h > lookbackHigh && c.delta <= 0) c.deltaDiv = 'BEAR';
+                        else if (c.ohlc.l < lookbackLow && c.delta >= 0) c.deltaDiv = 'BULL';
+                    }
+                }
+
+                // Composite score (optional)
+                let score = 0;
+                let tags = [];
+                const maxBuyStack = c.stacked.buy.reduce((m, s) => Math.max(m, s.count), 0);
+                const maxSellStack = c.stacked.sell.reduce((m, s) => Math.max(m, s.count), 0);
+
+                if (maxBuyStack >= STACK_LEN) { score += 2; tags.push('STACK_BUY'); }
+                if (maxSellStack >= STACK_LEN) { score -= 2; tags.push('STACK_SELL'); }
+                if (c.deltaDiv === 'BEAR') { score -= 2; tags.push('DIV_BEAR'); }
+                if (c.deltaDiv === 'BULL') { score += 2; tags.push('DIV_BULL'); }
+                if (c.deltaSignal === 'BUY' && maxBuyStack >= STACK_LEN) score += 1;
+                if (c.deltaSignal === 'SELL' && maxSellStack >= STACK_LEN) score -= 1;
+
+                c.signal = { score, tags };
+
+                // (optional debug)
+                // console.log('rows', c.rows, 'tickRows', c.tickRows);
+            });
+        }
+
+    </script>
+</body>
+
+</html>
