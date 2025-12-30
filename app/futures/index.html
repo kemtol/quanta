@@ -11,13 +11,13 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/theme.css?v=1.7.1">
-    <link rel="stylesheet" href="/style.css?v=1.7.1">
+    <link rel="stylesheet" href="../theme.css?v=1.7.1">
+    <link rel="stylesheet" href="../style.css?v=1.7.1">
 
-    <title>Futures Trading Features - QQQUANTA</title>
+    <title>Futures Features - QQQUANTA</title>
     <meta name="description"
         content="Advanced AI-powered futures trading tools: orderflow analysis, market footprint, and predictive analytics.">
-    <meta property="og:title" content="Futures Trading Features - QQQUANTA">
+    <meta property="og:title" content="Futures Features - QQQUANTA">
     <meta property="og:description" content="Advanced AI-powered futures trading tools for professional traders.">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="QQQUANTA">
@@ -52,13 +52,30 @@
         }
 
         .hero-bg {
-            background: #463CFF;
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #d946ef 100%);
+            background-size: 200% 200%;
             width: 100%;
             height: 75vh;
             position: fixed;
             top: 40px;
             left: 0;
             z-index: 1;
+            clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%);
+            animation: waveGradient 8s ease-in-out infinite;
+        }
+
+        @keyframes waveGradient {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
         }
 
         .hero-bg .dot {
@@ -74,7 +91,7 @@
             width: 2rem;
             height: 2rem;
             position: absolute;
-            background: cyan;
+            background: #d946ef;
             top: 1.5rem;
             left: 50%;
             transform: translateX(-50%);
@@ -101,6 +118,34 @@
             border: 1px solid #ccc;
             width: 100%;
         }
+
+        /* Numbered Blockquote */
+        .reason-block {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            text-align: left;
+            width: 100%;
+            padding: 12px 0;
+        }
+
+        .reason-number {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: yellow;
+            color: mediumpurple;
+            line-height: 1;
+            min-width: 50px;
+        }
+
+        .reason-text {
+            flex: 1;
+            opacity: 0.85;
+        }
+
+        .reason-text p {
+            margin: 0;
+        }
     </style>
 </head>
 
@@ -118,16 +163,17 @@
 
     <main class="container">
         <span class="dot"></span>
+
+        <!-- Box 1: Features -->
         <div class="pt-5 this-page content-card w-100 d-flex flex-column align-items-center p-4 my-4">
-
-
-            <h3 class="text-center mb-3 mt-4">Available Features</h3>
+            <h3 class="text-center mb-3 mt-4">Your Futures Tools Coming From Future</h3>
+            <p class="text-center">Protect your futures trading with advanced market analysis tools that can outrun
+                others. Make dumb money even dumber</p>
 
             <div class="p-1 my-1 w-100 text-center">
-                <a href="footprint.html" class="link-features">Orderflow Footprint Analysis</a>
                 <img src="../img/footprint-features.png" alt="Futures Trading Features" class="img-fluid mb-4"
                     style="max-width: 50%; border-radius: 12px; display: block; margin: 0 auto;">
-
+                <a href="footprint.html" class="link-features">Orderflow Footprint Analysis</a>
                 <p class="mb-1">Visualize market depth and orderflow patterns to identify institutional trading activity
                     and smart money movements.</p>
             </div>
@@ -137,23 +183,44 @@
                 <p class="mb-1">Machine learning-powered market analysis with LSTM predictions, probability scoring, and
                     automated signal generation.</p>
             </div>
+        </div>
 
-            <hr class="divider my-4">
+        <!-- Box 2: Why We Need This -->
+        <div class="this-page content-card w-100 d-flex flex-column align-items-center p-4 my-4">
+            <h3 class="text-center mb-4">Why We Need This</h3>
 
-            <h3>Coming Soon</h3>
-
-            <div class="p-1 my-1 w-100 text-center feature-item">
-                <a href="#" class="link-features">Volume Profile</a>
-                <p class="mb-1">Advanced volume analysis at key price levels to identify support/resistance zones and
-                    value areas.</p>
+            <div class="reason-block">
+                <span class="reason-number">#1</span>
+                <div class="reason-text">
+                    <p><strong>70%+ of futures volume</strong> is now driven by algorithmic and institutional traders.
+                        Retail traders without orderflow tools are trading blind.</p>
+                </div>
             </div>
 
-            <div class="p-1 my-1 w-100 text-center feature-item">
-                <a href="#" class="link-features">Smart Alerts</a>
-                <p class="mb-1">Real-time notifications for significant market events, price movements, and AI-detected
-                    trading opportunities.</p>
+            <div class="reason-block">
+                <span class="reason-number">#2</span>
+                <div class="reason-text">
+                    <p><strong>Smart money leaves footprints.</strong> Every large order, every stop hunt, every
+                        liquidity grab - visible in the orderflow data that most retail platforms don't show you.</p>
+                </div>
             </div>
 
+            <div class="reason-block">
+                <span class="reason-number">#3</span>
+                <div class="reason-text">
+                    <p><strong>AI is reshaping markets.</strong> Machine learning models now predict price movements
+                        with increasing accuracy. The question isn't whether to use AI - it's whether you're on the
+                        right side of it.</p>
+                </div>
+            </div>
+
+            <div class="reason-block">
+                <span class="reason-number">#4</span>
+                <div class="reason-text">
+                    <p><strong>Level the playing field.</strong> Get the same institutional-grade analysis that hedge
+                        funds use - at a fraction of the cost.</p>
+                </div>
+            </div>
         </div>
     </main>
 

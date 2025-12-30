@@ -38,12 +38,29 @@
 
 	<style>
 		.hero-bg {
-			background: #463CFF;
+			background: linear-gradient(135deg, #463CFF 0%, #7B68EE 50%, #463CFF 100%);
+			background-size: 200% 200%;
 			width: 100%;
 			height: 75vh;
 			position: absolute;
 			top: 0;
 			left: 0;
+			clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%);
+			animation: waveGradient 8s ease-in-out infinite;
+		}
+
+		@keyframes waveGradient {
+			0% {
+				background-position: 0% 50%;
+			}
+
+			50% {
+				background-position: 100% 50%;
+			}
+
+			100% {
+				background-position: 0% 50%;
+			}
 		}
 
 		.hero-bg .dot {
@@ -52,8 +69,55 @@
 			position: absolute;
 			background: cyan;
 			top: 59px;
-			left: 50%;
+			left: 65%;
+			transform: translateX(-50%);
 			border-radius: 999px;
+			animation: wobble 15s ease-in-out infinite;
+		}
+
+		@keyframes wobble {
+
+			0%,
+			100% {
+				transform: translateX(-50%) translateY(0);
+			}
+
+			25% {
+				transform: translateX(-52%) translateY(-4px);
+			}
+
+			50% {
+				transform: translateX(-48%) translateY(2px);
+			}
+
+			75% {
+				transform: translateX(-50%) translateY(-2px);
+			}
+		}
+
+		/* Wobble animation for feature images */
+		.wobble-img {
+			animation: wobbleImg 8s ease-in-out infinite;
+		}
+
+		@keyframes wobbleImg {
+
+			0%,
+			100% {
+				transform: translateY(0);
+			}
+
+			25% {
+				transform: translateY(-3px);
+			}
+
+			50% {
+				transform: translateY(2px);
+			}
+
+			75% {
+				transform: translateY(-2px);
+			}
 		}
 
 		.hero-title {
@@ -65,15 +129,20 @@
 			text-align: center;
 			left: 50%;
 			transform: translateX(-50%);
-			font-weight: 400;
+			font-weight: 500;
 			font-variant: small-caps;
 			z-index: 100;
-			font-size: 1.75rem;
+			font-size: 1.85rem;
 			color: #fff;
 		}
 
 		.hero-title .highlight {
 			color: #fff;
+		}
+
+		.hero-title .highlight strong {
+			color: royalblue;
+			background: yellow;
 		}
 
 		.content-card {
@@ -129,7 +198,7 @@
 
 		.status-bar .brand {
 			font-size: 14px;
-			color: #1f2937;
+			color: mediumslateblue;
 			font-weight: 700;
 			text-decoration: none;
 		}
@@ -148,7 +217,7 @@
 			color: #1f2937;
 			text-decoration: none;
 			font-size: 12px;
-			font-weight: 500;
+			font-weight: 700;
 			cursor: pointer;
 			white-space: nowrap;
 		}
@@ -163,7 +232,6 @@
 			top: 100%;
 			right: 0;
 			background: #fff;
-			border: 1px solid #e5e7eb;
 			border-radius: 8px;
 			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 			min-width: 180px;
@@ -177,6 +245,8 @@
 			color: #374151;
 			text-decoration: none;
 			font-size: 13px;
+			font-weight: 600;
+			text-align: center;
 		}
 
 		.dropdown a:hover {
@@ -315,29 +385,81 @@
 			</h1>
 		</div>
 
-		<!-- Content Card -->
+		<!-- Box 1: Solutions and Data -->
 		<div class="this-page content-card w-100 d-flex flex-column align-items-center p-4 my-4">
-			<h3 class="text-center mb-3 mt-4">Solutions and Data</h3>
+			<h3 class="text-center mb-3 mt-4">Dare To Step Ahead?<br>Using Our Big Data, AI and Machine Learning. Be
+				The 1%</h3>
+			<p class="text-center my-4">We provide tools and data for futures and crypto trading. We use tick data and
+				feed forward AI to provide insights and recommendations.</p>
 
-			<div class="p-1 my-1 w-100 text-center">
-				<a href="https://api.sssaham.com" class="link-features">Real Time API</a>
-				<p class="mb-1">Single API for real-time futures and crypto market data for your system integration.</p>
+			<a href="#free-plan" class="btn btn-lg fw-bold mb-2"
+				style="font-size: 1.25rem; background: linear-gradient(135deg, #463CFF 0%, #7B68EE 50%, #463CFF 100%); color: #fff; border: none;">Claim
+				and Use Free!</a>
+			<p class="text-center mb-0 text-muted" style="font-size: 0.85rem;">
+				<s style="color: #999;">$1000 USD</s>
+				<strong style="color: #28a745;">FOREVER FREE PLAN</strong>
+			</p>
+		</div>
+
+		<!-- Feature 1: Real Time API -->
+		<div class="this-page w-100 d-flex flex-column align-items-center p-4 my-4">
+			<div class="d-flex align-items-center gap-4 w-100">
+
+				<img src="img/realtime-api.jpg" alt="Real Time API" class="img-fluid wobble-img"
+					style="width: 35%; border-radius: 12px;">
+				<div class="flex-fill">
+					<a href="https://api.sssaham.com" class="link-features">Real Time API</a>
+					<p class="mb-2 mt-2">Single API for real-time futures and crypto market data for your system
+						integration.</p>
+					<a href="https://api.sssaham.com" class="btn btn-sm fw-bold w-100"
+						style="background: linear-gradient(135deg, #463CFF 0%, #7B68EE 50%, #7B68EE 100%); color: #fff; padding: 0.45rem; margin: 1rem 0;">See
+						Documentation ⟶</a>
+				</div>
 			</div>
+		</div>
 
-			<div class="p-1 my-1 w-100 text-center">
-				<a href="/futures/" class="link-features">Futures Forex AI Footprint and Orderflow</a>
-				<p class="mb-1">Advanced AI-powered orderflow analysis and market footprint insights for futures and
-					forex trading.</p>
+		<!-- Feature 2: Futures -->
+		<div class="this-page w-100 d-flex flex-column align-items-center p-4 my-4">
+			<div class="d-flex align-items-center gap-4 w-100 flex-row-reverse">
+				<img src="img/orderflow.jpg" alt="Orderflow Footprint" class="img-fluid wobble-img"
+					style="width: 35%; border-radius: 12px;">
+				<div class="flex-fill text-end">
+					<a href="/futures/" class="link-features">Futures Forex AI Footprint and Orderflow</a>
+					<p class="mb-2 mt-2">Advanced AI-powered orderflow analysis and market footprint insights for
+						futures and forex trading.</p>
+					<a href="/futures/" class="btn btn-sm fw-bold w-100"
+						style="background: linear-gradient(135deg, #463CFF 0%, #7B68EE 50%, #7B68EE 100%); color: #fff; padding: 0.45rem; margin: 1rem 0;">Precise
+						Entry ⟶</a>
+				</div>
 			</div>
+		</div>
 
-			<div class="p-1 my-1 w-100 text-center">
-				<a href="/crypto/" class="link-features">Crypto AI Footprint and Orderflow</a>
-				<p class="mb-1">AI-based broker summary analysis to identify market maker movements.</p>
+		<!-- Feature 3: Crypto -->
+		<div class="this-page w-100 d-flex flex-column align-items-center p-4 my-4">
+			<div class="d-flex align-items-center gap-4 w-100">
+				<img src="img/bitcoin-ai.jpg" alt="Crypto AI Footprint" class="img-fluid wobble-img"
+					style="width: 35%; border-radius: 12px;">
+				<div class="flex-fill">
+					<a href="/crypto/" class="link-features">Crypto AI Footprint and Orderflow</a>
+					<p class="mb-2 mt-2">AI-based broker summary analysis to identify market maker movements.</p>
+					<a href="/crypto/" class="btn btn-sm fw-bold w-100"
+						style="background: linear-gradient(135deg, #463CFF 0%, #7B68EE 50%, #7B68EE 100%); color: #fff; padding: 0.45rem; margin: 1rem 0;">Let
+						Him Work ⟶</a>
+				</div>
 			</div>
+		</div>
 
-			<hr class="divider my-4">
-
-			<h3>Training and Syllabus</h3>
+		<!-- Box 2: Training and Syllabus -->
+		<div class="this-page w-100 d-flex flex-column align-items-center p-4 my-4">
+			<h3 class="text-center mb-3">Training and Syllabus</h3>
+			<p class="text-center">
+				Tools without knowledge is not a tool.
+				<br>
+				You can have a hammer but without knowledge
+				on how to use it,
+				<br>
+				it is just a piece of metal.
+			</p>
 			<div class="tags my-5">
 				<a href="/training-quant-finance-saham/index.html" class="tag blue">#QuantitativeTrading</a>
 				<a href="/training-quant-finance-saham/index.html" class="tag green">#MarkovChain</a>
@@ -348,8 +470,10 @@
 				<a href="/training-quant-finance-saham/index.html" class="tag pink">#DataDriven</a>
 			</div>
 
-			<a href="login.html" class="btn btn-primary w-100">Enter</a>
-			<a href="register.html" class="btn btn-outline-primary my-2 w-100">Join Community</a>
+			<div class="d-flex gap-2 w-75">
+				<a href="login.html" class="btn btn-primary flex-fill w-50">Enter</a>
+				<a href="register.html" class="btn btn-outline-primary w-50 flex-fill">Join Community</a>
+			</div>
 		</div>
 
 		<!-- How It Works -->

@@ -1,53 +1,25 @@
- # =========================
-# Secrets / env
-# =========================
+# Environment files
 .env
-.env.*
 *.env
+workers/.env
 
-# =========================
-# Config (TOML / Workers)
-# =========================
-
-# =========================
-# Dependencies (Node / Workers)
-# =========================
-**/node_modules/
-
-# Wrangler / CF Workers build-state
+# Wrangler cache and state
 .wrangler/
-**/.wrangler/
+node_modules/.cache/wrangler/
+node_modules/.mf/
+wrangler-account.json
 
-# Build outputs (kalau nanti ada)
-dist/
-build/
-out/
-**/dist/
-**/build/
-**/out/
+# Node modules
+node_modules/
 
-# =========================
-# Logs / runtime temp
-# =========================
-logs/
-*.log
-tmp/
-*.pid
-
-# =========================
-# Backup / scratch / generated files
-# =========================
-BAK/
-project-structure.txt
-ignore
-
-# =========================
-# Editor / OS noise
-# =========================
-.DS_Store
-Thumbs.db
-*.swp
-*.swo
-*~
+# IDE
 .vscode/
 .idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build outputs
+dist/
+build/
