@@ -4,22 +4,27 @@ export default {
     async fetch(request, env) {
         const url = new URL(request.url);
 
-        // Simple proxy for other requests (existing functionality)
-        if (!url.pathname.startsWith("/rpa")) {
-            return env.STATE_ENGINE.fetch(request);
-        }
-
-        // RPA Endpoint: /rpa/refresh-token
+        // RPA Endpoints
         if (url.pathname === "/rpa/refresh-token") {
-            return await this.doLoginAndRefresh(env);
+            // Get target from query param (default: all)
+            const target = url.searchParams.get("target") || "all";
+            return await this.doLoginAndRefresh(env, target);
         }
 
-        return new Response("RPA Worker Ready", { status: 200 });
+        if (url.pathname === "/rpa/status") {
+            return Response.json({
+                ready: true,
+                targets: ["enq", "gc", "all"]
+            });
+        }
+
+        return new Response("RPA Worker Ready. Use /rpa/refresh-token?target=enq|gc|all", { status: 200 });
     },
 
-    async doLoginAndRefresh(env) {
+    async doLoginAndRefresh(env, target) {
         let browser;
         try {
+            console.log(`[RPA] Starting token refresh for target: ${target}`);
             console.log("[RPA] Launching browser...");
             browser = await puppeteer.launch(env.MYBROWSER);
             const page = await browser.newPage();
@@ -31,33 +36,24 @@ export default {
             // 2. Input Credentials
             console.log("[RPA] Inputting credentials...");
 
-            // Wait with debug dump
             try {
-                // Try wait for ANY input first to see if page loaded
                 await page.waitForSelector('input', { timeout: 15000 });
             } catch (timeoutErr) {
                 const html = await page.content();
                 const title = await page.title();
-                const url = page.url();
-                // Dump first 1000 chars of HTML to see what's wrong (Auth0? Captcha? Cloudflare challenge?)
-                throw new Error(`Login page load failed (no inputs). Title: ${title}, URL: ${url}. HTML: ${html.substring(0, 1000)}`);
+                const pageUrl = page.url();
+                throw new Error(`Login page load failed. Title: ${title}, URL: ${pageUrl}. HTML: ${html.substring(0, 1000)}`);
             }
 
-            // Type Username (Try generic inputs by order if specific names fail)
             const inputs = await page.$$('input');
             console.log(`[RPA] Found ${inputs.length} inputs`);
 
             if (inputs.length >= 2) {
-                // Assume first text/email input is username, first password input is password
-                // Or just blindly type into first two visible inputs
                 await inputs[0].type(env.TOPSTEP_USER);
-
-                // Find password input specifically if possible
                 const passInput = await page.$('input[type="password"]');
                 if (passInput) {
                     await passInput.type(env.TOPSTEP_PASS);
                 } else {
-                    // Fallback to second input
                     await inputs[1].type(env.TOPSTEP_PASS);
                 }
             } else {
@@ -73,7 +69,6 @@ export default {
                     submitBtn.click()
                 ]);
             } else {
-                // Try Enter key if button not found
                 await Promise.all([
                     page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 }),
                     page.keyboard.press('Enter')
@@ -81,14 +76,10 @@ export default {
             }
 
             console.log("[RPA] Login submitted, checking for token...");
-
-            // 4. Extract Token (Try multiple sources)
-            // Wait a bit for JS to populate storage
             await new Promise(r => setTimeout(r, 3000));
 
+            // 4. Extract Token
             const token = await page.evaluate(() => {
-                // TopStepX likely uses local storage or session storage key 'access_token', 'token', or similar
-                // Or inside a persistence object
                 return localStorage.getItem('access_token') ||
                     localStorage.getItem('token') ||
                     localStorage.getItem('jwt') ||
@@ -96,23 +87,40 @@ export default {
             });
 
             if (!token) {
-                // Debug: Take screenshot logic here if needed (omitted for now)
-                // Dump body text to logs for debugging failed login
                 const bodyText = await page.evaluate(() => document.body.innerText.substring(0, 200));
                 throw new Error(`Token not found after login. Page text: ${bodyText}`);
             }
 
             console.log(`[RPA] Token found! Length: ${token.length}`);
 
-            // 5. Push to Engine
-            const updateUrl = `http://internal/update-token?token=${token}`;
-            const updateRes = await env.STATE_ENGINE.fetch(updateUrl);
-            const updateText = await updateRes.text();
+            // 6. Push to Target Worker(s)
+            const results = {};
+
+            if (target === "enq" || target === "all") {
+                try {
+                    const res = await env.STATE_ENQ.fetch(`http://internal/update-token?token=${token}`);
+                    results.enq = { success: res.ok, status: res.status };
+                    console.log(`[RPA] ENQ update: ${res.ok ? 'OK' : 'FAILED'}`);
+                } catch (e) {
+                    results.enq = { success: false, error: e.message };
+                }
+            }
+
+            if (target === "gc" || target === "all") {
+                try {
+                    const res = await env.STATE_GC.fetch(`http://internal/update-token?token=${token}`);
+                    results.gc = { success: res.ok, status: res.status };
+                    console.log(`[RPA] GC update: ${res.ok ? 'OK' : 'FAILED'}`);
+                } catch (e) {
+                    results.gc = { success: false, error: e.message };
+                }
+            }
 
             return Response.json({
                 success: true,
                 message: "RPA Login Successful & Token Updated",
-                engineResponse: updateText
+                target,
+                results
             });
 
         } catch (e) {
@@ -127,5 +135,40 @@ export default {
                 await browser.close();
             }
         }
+    },
+
+    async scheduled(event, env, ctx) {
+        console.log("[Cron] Scheduled event triggered");
+
+        // 1. Random Jitter (1 to 5 minutes)
+        // Range: 60,000ms to 300,000ms
+        const jitterMs = Math.floor(Math.random() * (300000 - 60000 + 1) + 60000);
+        console.log(`[Cron] Applying jitter: ${Math.round(jitterMs / 1000)}s`);
+
+        // Note: Using setTimeout in a promise to block execution without blocking the thread
+        await new Promise(resolve => setTimeout(resolve, jitterMs));
+
+        // 2. Check Status (Smart Rotation)
+        console.log("[Cron] Checking token status...");
+        try {
+            // Using STATE_ENQ as the primary canary
+            const statusRes = await env.STATE_ENQ.fetch("http://internal/token-status");
+            if (statusRes.ok) {
+                const status = await statusRes.json();
+                console.log(`[Cron] Status: valid=${status.valid}, ws_state=${status.ws_state}`);
+
+                // If token is valid AND websocket is subscribed, skip login
+                if (status.valid && status.ws_state === 'SUBSCRIBED') {
+                    console.log("[Cron] Token is healthy and connected. Skipping rotation.");
+                    return;
+                }
+            }
+        } catch (e) {
+            console.warn("[Cron] Status check failed, forcing rotation:", e);
+        }
+
+        // 3. Execute Rotation if needed
+        console.log("[Cron] Token unhealthy or expired. Executing rotation.");
+        await this.doLoginAndRefresh(env, "all");
     }
 };

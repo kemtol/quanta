@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <!--
 QQQUANTA
 Version: v1.9.2
@@ -575,10 +575,52 @@ Changelog:
             text-overflow: ellipsis;
             margin: 0 auto;
         }
+
+        /* Status Bar logic (same as futures/index.html) */
+        .status-bar {
+            position: sticky;
+            top: 0;
+            z-index: 60;
+            background: #fff;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            height: 40px;
+            border-bottom: 1px solid #e5e7eb;
+            transition: transform 0.3s ease;
+        }
+
+        .status-bar.hidden {
+            transform: translateY(-100%);
+        }
+
+        .status-bar .back-link {
+            color: #3b82f6;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-bar .page-title {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            color: #1f2937;
+            font-weight: 700;
+        }
     </style>
 </head>
 
 <body>
+    <!-- Status Bar -->
+    <nav class="status-bar">
+        <a href="index.html" class="back-link">
+            <i class="fa-solid fa-chevron-left"></i> Futures
+        </a>
+        <span class="page-title">AI Analytics</span>
+    </nav>
+
     <div id="app" class="container">
         <section id="home-page">
             <!--<div class="this-page border-bottom d-flex flex-row align-items-center justify-content-between px-3 py-1 mt-4"
@@ -588,8 +630,7 @@ Changelog:
 
             <div class="this-page my-3 p-2" style="background-color: #e8ecec !important;">
                 <p class="d-block text-center mb-0">
-                    Dapatkan rekomendasi Agentic AI. <a href="about-us.html" style="color: dodgerblue;">Pelajari Lebih
-                        Lanjut</a>
+                    Get Agentic AI recommendations. <a href="about-us.html" style="color: dodgerblue;">Learn More</a>
                 </p>
             </div>
 
@@ -709,9 +750,35 @@ Changelog:
             return { guest: true, user: null };
         }
 
+        let lastScrollTop = 0;
+        function initSmartHeader() {
+            const statusBar = document.querySelector('.status-bar');
+            if (!statusBar) return;
+
+            window.addEventListener('scroll', () => {
+                const st = window.pageYOffset || document.documentElement.scrollTop;
+
+                // Always show at very top
+                if (st <= 0) {
+                    statusBar.classList.remove('hidden');
+                    lastScrollTop = st;
+                    return;
+                }
+
+                if (st > lastScrollTop) {
+                    // Downscroll -> Hide if not at very top
+                    if (st > 50) statusBar.classList.add('hidden');
+                } else {
+                    // Upscroll -> Show
+                    statusBar.classList.remove('hidden');
+                }
+                lastScrollTop = st <= 0 ? 0 : st;
+            }, { passive: true });
+        }
 
 
         $(document).ready(async function () {
+            initSmartHeader();
             const session = await guardIndex();
             if (session && session.redirected) {
                 // sudah di-redirect ke profile.html
@@ -752,11 +819,11 @@ Changelog:
             ];
 
             function renderTradeStories(stories) {
-                const host = $("body    ");
+                const host = $("#home-page");
                 if (!host.length || !stories || !stories.length) return;
 
                 const storyWrapper = $(`
-                <div class="container">
+                <div class="container ps-0 pe-0">
                     <div class="story-strip-wrapper">
                         <div class="story-strip-header"></div>
                         <div class="story-strip"></div>
@@ -794,7 +861,7 @@ Changelog:
                     strip.append(item);
                 });
 
-                // taruh DI ATAS wizard (tapi masih di dalam home-page)
+                // Place INSIDE home-page, at the top
                 host.prepend(storyWrapper);
             }
 
@@ -906,14 +973,14 @@ Changelog:
                 $("#chat-composer").removeClass("disabled");
                 $("#composer-input, #composer-send").prop("disabled", false);
                 $("#composer-hint").addClass("d-none");
-                $("#composer-input").attr("placeholder", "Ketik respon kamu di sini...");
+                $("#composer-input").attr("placeholder", "Type your response here...");
                 syncComposerReserve();
                 scrollToBottom();
             }
             function disableComposer() {
                 $("#chat-composer").addClass("disabled");
                 $("#composer-input, #composer-send").prop("disabled", true);
-                $("#composer-input").val("").attr("placeholder", "Composer akan aktif setelah rekomendasi keluar...");
+                $("#composer-input").val("").attr("placeholder", "Composer will be active after recommendation...");
                 $("#composer-hint").removeClass("d-none");
                 syncComposerReserve();
             }
@@ -986,7 +1053,7 @@ Changelog:
                 const box = $(`
                     <div class="file-drop-box my-3" tabindex="0">
                         <i class="fa-solid fa-cloud-arrow-up cloud-icon"></i>
-                        <div class="hint mb-3">Tap / drop semua gambar sekaligus</div>
+                        <div class="hint mb-3">Tap / drop all images at once</div>
 
                         <input type="file" class="uploader" multiple accept="image/*"
                         style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;" />
@@ -1002,14 +1069,14 @@ Changelog:
                 const controls = $(`
                     <div class="upload-controls">
                         <button type="button"
-                        class="btn btn-sm upload-btn upload-btn-gallery pick-gallery-btn">
+                        <class="btn btn-sm upload-btn upload-btn-gallery pick-gallery-btn">
                         <i class="fa-regular fa-image"></i>
-                        <span>Galeri</span>
+                        <span>Gallery</span>
                         </button>
                         <button type="button"
                         class="btn btn-sm upload-btn upload-btn-camera camera-btn">
                         <i class="fa-solid fa-camera"></i>
-                        <span>Kamera</span>
+                        <span>Camera</span>
                         </button>
                         <input type="file" class="camera-input d-none"
                         accept="image/*" capture="environment" />
@@ -1050,7 +1117,7 @@ Changelog:
                     staged.forEach((f, idx) => {
                         preview.append(`
                         <div class="preview-item" data-index="${idx}">
-                            <button type="button" class="preview-remove" aria-label="Hapus gambar">&times;</button>
+                            <button type="button" class="preview-remove" aria-label="Remove image">&times;</button>
                             <img src="${f.data}" alt="preview">
                         </div>
                         `);
@@ -1066,7 +1133,7 @@ Changelog:
                         // kalau minCount > 1 baru masuk akal kasih hint
                         if (minCount > 1) {
                             remainingHint
-                                .text(`${remaining} screenshot lagi!`)
+                                .text(`${remaining} more screenshots!`)
                                 .show();
                         } else {
                             remainingHint.hide();
@@ -1082,7 +1149,7 @@ Changelog:
                 async function appendFiles(fileList) {
                     const files = [...fileList].filter(f => f.type.startsWith("image/"));
                     if (!files.length) {
-                        showWarning("File harus berupa gambar.");
+                        showWarning("File must be an image.");
                         return;
                     }
 
@@ -1222,7 +1289,7 @@ Changelog:
                 wrap.append($("<div></div>").addClass("small fw-semibold text-muted mb-1").text(title));
 
                 if (!arr || !arr.length) {
-                    wrap.append($("<div></div>").addClass("small text-muted").text("Tidak ada data."));
+                    wrap.append($("<div></div>").addClass("small text-muted").text("No data available."));
                     return wrap;
                 }
 
@@ -1477,7 +1544,7 @@ Changelog:
             // Steps (chat style)
             // ---------------------------
             function step1_pair() {
-                const b = addAssistantText("<p>Pair apa yang mau kamu analisa? Pilih salah satu:</p>");
+                const b = addAssistantText("<p>Which pair would you like to analyze? Choose one:</p>");
                 addQuickReplies(b, [
                     { label: "Gold", onClick: () => choosePair("gold") },
                     { label: "Oil", onClick: () => choosePair("oil") },
@@ -1498,7 +1565,7 @@ Changelog:
             }
 
             function step2_style() {
-                const b = addAssistantText("<p>Trading style kamu Intraday, Swing, atau Dead Retail Zone?</p>");
+                const b = addAssistantText("<p>What is your trading style? Intraday, Swing, or Dead Retail Zone?</p>");
                 addQuickReplies(b, [
                     { label: "Intraday", onClick: () => chooseStyle("intraday") },
                     { label: "Swing", onClick: () => chooseStyle("swing") },
@@ -1516,21 +1583,21 @@ Changelog:
             function step3_uploadCharts() {
                 const req = requiredCharts();
                 addAssistantText(
-                    `<p class="mb-2">Oke. Sekarang upload chart berikut sekaligus dalam 1 kali kirim:</p><p>• ${req.join("<br/>• ")}</p>`
+                    `<p class="mb-2">Okay. Now upload the following charts at once:</p><p>• ${req.join("<br/>• ")}</p>`
                 );
 
                 addUploadBubble({
                     title: "Upload Chart Screenshots",
-                    hint: `Wajib minimal ${req.length} gambar sesuai list di atas.`,
+                    hint: `Minimum ${req.length} images required as listed above.`,
                     storageKey: STORAGE_KEYS.charts,
                     minCount: req.length,                // ⬅️ WAJIB 3 untuk swing / intraday
                     onFiles: (imgs) => {
                         if (imgs.length < req.length) {
-                            showWarning(`Minimal ${req.length} chart ya (${req.join(", ")})`);
+                            showWarning(`Minimum ${req.length} charts required (${req.join(", ")})`);
                             return;
                         }
                         wizardState.charts = imgs;
-                        addUserText(`✅ Charts di-upload (${imgs.length} file).`);
+                        addUserText(`✅ Charts uploaded (${imgs.length} files).`);
                         step4_uploadMacro();
                     }
                 });
@@ -1538,17 +1605,17 @@ Changelog:
 
             function step4_uploadMacro() {
                 addAssistantText(
-                    `<p class="mb-2">Sekarang upload screenshot macro sekaligus (boleh lebih dari 2 file):</p><p>• VIX<br>• US10Y<br>• DXY<br>• Yield curve / macro dashboard lain</p>`
+                    `<p class="mb-2">Now upload macro screenshots at once (more than 2 files allowed):</p><p>• VIX<br>• US10Y<br>• DXY<br>• Yield curve / other macro dashboard</p>`
                 );
 
                 addUploadBubble({
                     title: "Upload Macro Screenshots",
-                    hint: "Drop/tap untuk upload semua macro metrics (minimal 2 gambar).",
+                    hint: "Drop/tap to upload all macro metrics (minimum 2 images).",
                     storageKey: STORAGE_KEYS.macro,
                     minCount: 2,                          // ⬅️ bebas: 1 / 2 / 3 sesuai mau kamu
                     onFiles: (imgs) => {
                         wizardState.macro = imgs;
-                        addUserText(`✅ Macro di-upload (${imgs.length} file).`);
+                        addUserText(`✅ Macro uploaded (${imgs.length} files).`);
                         step5_confirmAndAnalyze();
                     }
                 });
@@ -1559,7 +1626,7 @@ Changelog:
                 const req = requiredCharts();
 
                 const html = `
-                    <p class="mb-2">Sebelum analisa, kita confirm dulu:</p>
+                    <p class="mb-2">Before analysis, let's confirm:</p>
 
                     <p class="mb-1 ps-3" style="border-left: 3px solid #eee"><strong>Pair:</strong> ${wizardState.pair.toUpperCase()}</p>
                     <p class="mb-1 ps-3" style="border-left: 3px solid #eee"><strong>Style:</strong> ${wizardState.style.toUpperCase()}</p>
@@ -1567,28 +1634,28 @@ Changelog:
                     <p class="mb-1 ps-3" style="border-left: 3px solid #eee"><strong>Charts uploaded:</strong> ${wizardState.charts.length}</p>
                     <p class="mb-2 ps-3" style="border-left: 3px solid #eee"><strong>Macro uploaded:</strong> ${wizardState.macro.length}</p>
 
-                    <p>Klik <strong>"Analisa Sekarang"</strong> untuk generate rekomendasi (JSON).</p>
+                    <p>Click <strong>"Analyze Now"</strong> to generate recommendations (JSON).</p>
                 `;
 
                 const b = addAssistantText(html);
 
                 addQuickReplies(b, [
-                    { label: "Analisa Sekarang", onClick: () => generateJsonResponse() },
-                    { label: "Ulang Upload Charts", onClick: () => restartFromCharts() },
-                    { label: "Ulang Upload Macro", onClick: () => restartFromMacro() }
+                    { label: "Analyze Now", onClick: () => generateJsonResponse() },
+                    { label: "Re-upload Charts", onClick: () => restartFromCharts() },
+                    { label: "Re-upload Macro", onClick: () => restartFromMacro() }
                 ]);
             }
 
 
 
             function restartFromCharts() {
-                addUserText("Ulang upload charts.");
+                addUserText("Re-upload charts.");
                 wizardState.charts = [];
                 step3_uploadCharts();
             }
 
             function restartFromMacro() {
-                addUserText("Ulang upload macro.");
+                addUserText("Re-upload macro.");
                 wizardState.macro = [];
                 step4_uploadMacro();
             }
@@ -1596,7 +1663,7 @@ Changelog:
             async function generateJsonResponse() {
                 // Bubble status dengan titik 3 biji berkedip
                 const loadingBubble = addUserText(
-                    '<span class="validation-text">Sedang memvalidasi kelengkapan data' +
+                    '<span class="validation-text">Validating data completeness' +
                     '<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>' +
                     '</span>'
                 );
@@ -1657,14 +1724,14 @@ Changelog:
                     // ✅ kalau sukses, ubah teks loading-nya
                     const vt = loadingBubble.find(".validation-text");
                     if (vt.length) {
-                        vt.text("Validasi selesai.");
+                        vt.text("Validation complete.");
                     }
 
                 } catch (err) {
                     // ❌ kalau error, kasih info di bubble yang sama
                     const vt = loadingBubble.find(".validation-text");
                     if (vt.length) {
-                        vt.text("Validasi gagal: " + (err.message || String(err)));
+                        vt.text("Validation failed: " + (err.message || String(err)));
                     }
 
                     addAssistantText(`❌ Error: ${err.message}`);
@@ -1679,15 +1746,15 @@ Changelog:
 
                 // 1. Cek jika AI bilang BELUM SIAP (ready_for_analysis: false)
                 if (jsonObj.ready_for_analysis === false) {
-                    const reason = jsonObj.reason_if_not_ready || "Data tidak lengkap.";
+                    const reason = jsonObj.reason_if_not_ready || "Data incomplete.";
                     const missing = (jsonObj.input_summary?.timeframes_missing || []).join(", ");
 
                     const html = `
-                        <div style="color: #dc3545;"><strong class="my-2">⛔ Data Belum Lengkap</strong><p>${reason}<br>${missing ? `Missing TFs: ${missing}</p>` : ""}</div>
+                        <div style="color: #dc3545;"><strong class="my-2">⛔ Data Incomplete</strong><p>${reason}<br>${missing ? `Missing TFs: ${missing}</p>` : ""}</div>
                     `;
                     const b = addAssistantText(html);
                     addQuickReplies(b, [
-                        { label: "Upload Ulang Charts", onClick: () => restartFromCharts() }
+                        { label: "Re-upload Charts", onClick: () => restartFromCharts() }
                     ]);
                     return; // Stop, jangan render tabel
                 }
@@ -1699,7 +1766,7 @@ Changelog:
                     // update bubble "Sedang memvalidasi..." biar nyambung
                     const vt = loadingBubble.find(".validation-text");
                     if (vt.length) {
-                        vt.text("Validasi sukses. Menjalankan analisa...");
+                        vt.text("Validation successful. Running analysis...");
                     }
 
                     // ⬅️ langsung lompat ke analyzer, TANPA bubble hijau / tombol lagi
@@ -1715,11 +1782,11 @@ Changelog:
 
                 if (!auto) {
                     // dipakai kalau user klik tombol "Analisa"
-                    addUserText("Analisa sekarang...");
+                    addUserText("Analyzing now...");
                 } else {
                     // dipakai kalau auto-run sesudah validasi sukses
                     var analysisBubble = addAssistantText(
-                        '<span class="analysis-status-text">All good! Sekarang menjalankan analisa multi-agent' +
+                        '<span class="analysis-status-text">All good! Running multi-agent analysis' +
                         '<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>' +
                         '</span>'
                     );
@@ -1813,34 +1880,34 @@ Changelog:
                     if (typeof analysisBubble !== "undefined") {
                         const at = analysisBubble.find(".analysis-status-text");
                         if (at.length) {
-                            at.text("Analisa multi-agent selesai.");
+                            at.text("Multi-agent analysis complete.");
                         }
                     }
 
                 } catch (err) {
-                    addAssistantText(`❌ Gagal call analyzer: ${err.message}`);
+                    addAssistantText(`❌ Analyzer call failed: ${err.message}`);
                 }
             }
 
             function acceptTrade(isYes, jsonObj) {
                 wizardState.acceptedTrade = isYes;
-                addUserText(isYes ? "Ya, lakukan." : "Tidak.");
+                addUserText(isYes ? "Yes, proceed." : "No.");
 
                 if (isYes) {
                     console.log("SAVE TO PAIR STORY:", jsonObj);
-                    addAssistantText("✅ Oke, rencana trading disimpan ke Pair Story kamu. Semoga eksekusinya lancar!");
+                    addAssistantText("✅ Okay, trading plan saved to your Pair Story. Good luck!");
                 } else {
-                    addAssistantText("👍 Siap. Tidak disimpan. Kalau mau analisa ulang, refresh halaman atau mulai wizard lagi.");
+                    addAssistantText("👍 Roger that. Not saved. To re-analyze, refresh page or restart wizard.");
                 }
 
-                const b = addAssistantText("Mau mulai analisa baru?");
+                const b = addAssistantText("Start a new analysis?");
                 addQuickReplies(b, [
-                    { label: "Mulai lagi", onClick: () => resetAll() }
+                    { label: "Start Over", onClick: () => resetAll() }
                 ]);
             }
 
             function resetAll() {
-                addUserText("Mulai lagi.");
+                addUserText("Start Over.");
 
                 wizardState = { pair: null, style: null, charts: [], macro: [], acceptedTrade: null };
 
@@ -1870,15 +1937,15 @@ Changelog:
             // 2) SECOND BUBBLE: CTA register/login
             addAssistantText(
                 '<p class="mt-2">' +
-                '<a href="register.html">Daftar</a> untuk mendapatkan full access, ' +
-                'atau <a href="login.html">login</a> kalau sudah punya akun.' +
+                '<a href="register.html">Register</a> to get full access, ' +
+                'or <a href="login.html">login</a> if you already have an account.' +
                 '</p>'
             );
 
             // 3) THIRD BUBBLE: sticker avatar
             const stickerBubble = addMessage(
                 "assistant",
-                '<img src="img/avatar.png" alt="Avatar" />'
+                '<img src="../img/avatar.png" alt="Avatar" />'
             );
             stickerBubble.addClass("sticker-bubble my-2");
 

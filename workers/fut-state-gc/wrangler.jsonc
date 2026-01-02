@@ -1,0 +1,57 @@
+// workers/fut-state-gc/wrangler.jsonc
+{
+    // ============================
+    // fut-state-gc (Gold Futures)
+    // Full TopStepX streaming + footprint storage
+    // ============================
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "fut-state-gc",
+    "main": "src/index.js",
+    "compatibility_date": "2024-09-23",
+    "compatibility_flags": [
+        "nodejs_compat"
+    ],
+    "workers_dev": true,
+    // ============================
+    // DURABLE OBJECTS
+    // ============================
+    "durable_objects": {
+        "bindings": [
+            {
+                "name": "TOPSTEPX_TAPER",
+                "class_name": "TopstepXTaper"
+            }
+        ]
+    },
+    // ============================
+    // MIGRATIONS (fresh worker)
+    // ============================
+    "migrations": [
+        {
+            "tag": "v1",
+            "new_classes": [
+                "TopstepXTaper"
+            ]
+        }
+    ],
+    // ============================
+    // R2 BUCKET
+    // ============================
+    "r2_buckets": [
+        {
+            "binding": "DATA_LAKE",
+            "bucket_name": "tape-data-futures"
+        }
+    ],
+    // ============================
+    // ENV VARS
+    // ============================
+    "vars": {
+        "TAPER_SYMBOL": "GCE",
+        "TAPER_TIMEFRAME": "1m",
+        "TAPER_TICK_SIZE": "0.10"
+    },
+    "observability": {
+        "enabled": false
+    }
+}

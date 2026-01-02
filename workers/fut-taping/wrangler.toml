@@ -2,10 +2,19 @@ name = "fut-taping"
 main = "src/index.js"
 compatibility_date = "2024-12-17"
 compatibility_flags = ["nodejs_compat"]
+usage_model = "unbound"
 
 # Browser Rendering Binding
 browser = { binding = "MYBROWSER" }
 
+# Service bindings for each symbol worker
 [[services]]
-binding = "STATE_ENGINE"
-service = "fut-state-engine"
+binding = "STATE_ENQ"
+service = "fut-state-enq"
+
+[[services]]
+binding = "STATE_GC"
+service = "fut-state-gc"
+
+[triggers]
+crons = ["*/30 * * * *"]

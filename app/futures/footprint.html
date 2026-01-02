@@ -107,22 +107,30 @@
    2) Header / Status Bar
 ========================= */
         #status-bar {
-            position: sticky;
+            position: fixed;
             left: 0;
-            top: auto;
-            /* Allow it to scroll vertically with the page/wrapper */
+            top: 0;
             width: 100vw;
-            /* Span full viewport width so it doesn't get cut by grid width */
-            z-index: 60;
-            /* Higher than time-header */
-            background: var(--bg);
+            z-index: 999;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(4px);
             padding: 8px 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transform: translateY(0);
+            transition: transform 0.3s ease-in-out;
+            border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            height: 40px;
-            border-bottom: 1px solid var(--border);
+            height: 48px;
+            /* Slightly taller for touch */
         }
+
+        #status-bar.hidden {
+            transform: translateY(-100%);
+        }
+
+
 
         .status-left,
         .status-right {
@@ -964,12 +972,11 @@
         #last-price-line {
             position: absolute;
             left: 0;
-            height: 3px;
+            height: 1px;
             background: dodgerblue;
             pointer-events: none;
             z-index: 100;
             display: none;
-            box-shadow: 0 0 8px dodgerblue;
         }
 
         #last-price-line::after {
@@ -1055,7 +1062,11 @@
             <!-- Status Bar (Sticky Left, Scrollable Vertical) -->
             <div id="status-bar">
                 <div class="status-left">
-                    <span class="symbol-badge">ENQ</span>
+                    <select id="symbol-select" class="symbol-badge" onchange="switchSymbol(this.value)"
+                        style="cursor:pointer; border:none; outline:none; font-weight:700; font-size:11px; padding:0 8px; height:21px; border-radius:4px; background:#f3f4f6;">
+                        <option value="ENQ" selected>ENQ</option>
+                        <option value="GCE">GCE (Gold)</option>
+                    </select>
                     <div class="control-group">
                         <button class="secondary" onclick="loadLive()">Live</button>
                         <label id="auto-refresh-label"
@@ -1117,9 +1128,60 @@
     </div>
 
     <script>
-        const API_BASE = 'https://fut-state-engine.mkemalw.workers.dev/data';
-        const STREAM_WS = 'wss://fut-state-engine.mkemalw.workers.dev/stream';
-        const TICK_SIZE = 0.25; // ENQ/MNQ tick size
+        // Symbol Configuration
+        const SYMBOLS = {
+            ENQ: {
+                name: 'E-mini NASDAQ',
+                apiBase: 'https://fut-state-enq.mkemalw.workers.dev/data',
+                streamWs: 'wss://fut-state-enq.mkemalw.workers.dev/stream',
+                tickSize: 0.25
+            },
+            GCE: {
+                name: 'Gold Futures',
+                apiBase: 'https://fut-state-gc.mkemalw.workers.dev/data',
+                streamWs: 'wss://fut-state-gc.mkemalw.workers.dev/stream',
+                tickSize: 0.10
+            }
+        };
+
+        // Current Symbol (default ENQ)
+        let CURRENT_SYMBOL = 'ENQ';
+        let API_BASE = SYMBOLS.ENQ.apiBase;
+        let STREAM_WS = SYMBOLS.ENQ.streamWs;
+        let TICK_SIZE = SYMBOLS.ENQ.tickSize;
+
+        // Switch Symbol function
+        function switchSymbol(symbol) {
+            if (!SYMBOLS[symbol]) return;
+
+            CURRENT_SYMBOL = symbol;
+            API_BASE = SYMBOLS[symbol].apiBase;
+            STREAM_WS = SYMBOLS[symbol].streamWs;
+            TICK_SIZE = SYMBOLS[symbol].tickSize;
+
+            // Save to LocalStorage
+            localStorage.setItem('selectedSymbol', symbol);
+
+            // Update URL
+            const url = new URL(window.location);
+            url.searchParams.set('symbol', symbol);
+            window.history.pushState({}, '', url);
+
+            // Update page title
+            document.title = `${symbol} Footprint Chart - QQQUANTA`;
+
+            // Reconnect price stream
+            if (priceWs) {
+                priceWs.close();
+                priceWs = null;
+            }
+            setTimeout(connectPriceStream, 500);
+
+            // Reload data
+            loadLive();
+        }
+
+        const AGGREGATOR_API_BASE = 'https://fut-taping-agregator.mkemalw.workers.dev';
         let data = [];
         // Global state for Crosshair
         let G_prices = [];
@@ -1320,6 +1382,38 @@
             tickerPrice.textContent = price.toFixed(2);
         }
 
+        let lastScrollTop = 0;
+        function initSmartHeader() {
+            const wrapper = document.getElementById('chart-wrapper');
+            const statusBar = document.getElementById('status-bar');
+            if (!wrapper || !statusBar) return;
+
+            wrapper.onscroll = () => {
+                const st = wrapper.scrollTop;
+                const threshold = window.innerHeight * 0.5; // 50% of screen height logic
+
+                // Logic:
+                // 1. If at top (st < 50), always show
+                // 2. If scrolling DOWN, hide
+                // 3. If scrolling UP, show (but maybe only if we are deep enough?) 
+                //    User said: "scroll up and 50% above screen height it appears"
+                //    Let's interpret: Toggle visibility based on scroll direction. 
+
+                if (st <= 10) {
+                    statusBar.classList.remove('hidden');
+                } else {
+                    if (st > lastScrollTop) {
+                        // Scrolling DOWN -> Hide
+                        statusBar.classList.add('hidden');
+                    } else {
+                        // Scrolling UP -> Show
+                        statusBar.classList.remove('hidden');
+                    }
+                }
+                lastScrollTop = st <= 0 ? 0 : st;
+            };
+        }
+
         function scheduleReconnect() {
             if (priceReconnectTimer) return;
             priceReconnectTimer = setTimeout(() => {
@@ -1330,7 +1424,9 @@
 
         // Start price stream on page load
         document.addEventListener('DOMContentLoaded', () => {
+            init(); // Initialize app (load symbol, params, etc.)
             setTimeout(connectPriceStream, 1000);
+            initSmartHeader();
         });
         let G_headerHeight = 0; // calculated in render
         let G_colOffset = 0;    // calculated in render (px width of left headers)
@@ -1365,7 +1461,33 @@
 
 
         function init() {
-            // Populate hours 00-23
+            // 1) Restore Symbol from URL or LocalStorage
+            const params = new URLSearchParams(window.location.search);
+            const urlSymbol = params.get('symbol');
+            const storedSymbol = localStorage.getItem('selectedSymbol');
+
+            let targetSymbol = 'ENQ';
+            if (urlSymbol && SYMBOLS[urlSymbol]) {
+                targetSymbol = urlSymbol;
+            } else if (storedSymbol && SYMBOLS[storedSymbol]) {
+                targetSymbol = storedSymbol;
+            }
+
+            // Apply restored symbol if different from default
+            if (targetSymbol !== CURRENT_SYMBOL) {
+                CURRENT_SYMBOL = targetSymbol;
+                API_BASE = SYMBOLS[targetSymbol].apiBase;
+                STREAM_WS = SYMBOLS[targetSymbol].streamWs;
+                TICK_SIZE = SYMBOLS[targetSymbol].tickSize;
+
+                // Update dropdown UI
+                const sel = document.getElementById('symbol-select');
+                if (sel) sel.value = targetSymbol;
+
+                document.title = `${targetSymbol} Footprint Chart - QQQUANTA`;
+            }
+
+            // 2) Populate hours 00-23
             const hSel = document.getElementById('dev-hour');
             if (hSel) {
                 for (let i = 0; i < 24; i++) {
@@ -1377,8 +1499,7 @@
                 }
             }
 
-            // Check URL Params
-            const params = new URLSearchParams(window.location.search);
+            // 3) Check URL Params for History Mode (date/hour)
             const pDate = params.get('date'); // Expecting YYYYMMDD
             const pHour = params.get('hour'); // Expecting HH00 or similar
 
@@ -1396,7 +1517,6 @@
 
                 const dateInput = document.getElementById('dev-date');
                 if (dateInput) dateInput.value = fmtDate;
-                const hSel = document.getElementById('dev-hour');
                 if (hSel) hSel.value = fmtHour;
 
                 // Show controls if specific date requested
@@ -1413,12 +1533,7 @@
 
                 const dateInput = document.getElementById('dev-date');
                 if (dateInput) dateInput.value = `${y}-${m}-${d}`;
-                const hSel = document.getElementById('dev-hour');
                 if (hSel) hSel.value = h;
-
-                // Open controls if we are in history mode (optional, but good for UX if params exist)
-                // But here we are in 'else' block (no params), so keep hidden.
-                // However, if we HAD params (the if block), we might want to open them.
 
                 loadLive();
             }
@@ -1436,7 +1551,7 @@
             }
         }
 
-        const AGGREGATOR_API_BASE = 'https://fut-taping-agregator.mkemalw.workers.dev';
+
         let liveAbortController = null;
         let autoRefreshInterval = null;
         let lastActivityTime = Date.now();
@@ -1617,25 +1732,35 @@
 
                 data.sort((a, b) => Date.parse(a.t0) - Date.parse(b.t0)); // Ensure sorted time
 
-                // Optimized Loop
+                // Standard VWAP Calculation (Anchored to Session/Day)
+                // Formula: Cumulative(Typical Price * Volume) / Cumulative(Volume)
+                // We start with 'seedVal' (Turnover) and 'seedVol' (Volume) from the daily summary if available.
+
                 for (const c of data) {
-                    // Approximate candle turnover if not present (poc * vol is rough, better: sum(p*v))
-                    // Ideally candle should have turnover. If not, we estimate.
+                    // 1. Calculate Calculation Price (Typical Price is standard)
+                    // Precision Note: Using footprint rows (sum(p*v)) is more accurate than OHLC Typical.
+                    // We prioritize footprint accuracy.
                     let candleTurnover = 0;
                     if (c.levels && c.levels.length > 0) {
                         for (const lv of c.levels) {
                             const l = normLevel(lv);
                             if (!Number.isFinite(l.p)) continue;
-                            candleTurnover += l.p * (l.bv + l.av);
+                            const levelVol = l.bv + l.av;
+                            candleTurnover += l.p * levelVol;
                         }
-                    } else {
-                        candleTurnover = c.ohlc.c * c.vol; // fallback
+                    } else if (c.ohlc) {
+                        // Fallback: Typical Price * Vol
+                        const tp = (c.ohlc.h + c.ohlc.l + c.ohlc.c) / 3;
+                        candleTurnover = tp * c.vol;
                     }
 
-                    // Preserve backend candle VWAP before calculating session VWAP
+                    // Preserve backend candle VWAP (often just for that candle)
                     c.vwap_candle = c.vwap;
+
+                    // Accumulate for Session VWAP
                     cumVol += c.vol;
                     cumVal += candleTurnover;
+
                     c.vwap_session = cumVol > 0 ? cumVal / cumVol : 0;
                 }
                 updateProgress(85, 'VWAP calculated');
